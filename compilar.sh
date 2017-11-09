@@ -2,7 +2,7 @@
 
 source include/colors.sh
 
-CLONE="true"
+CLONE="false"
 TARGET="Cubieboard"
 TARGET_KERNEL="sun4i_defconfig"
 PWD_F="$(pwd)"
@@ -43,17 +43,25 @@ fex2bin sources/fex/cubieboard-a10-cubiescreen.fex ${OUTPUT_F}/script.bin
 #Configuring kernel
 echo "${bold}Configurando Kernel ${yellow}${KERNEL_V}${reset}" 
 cd ${PWD_F}/linux-sunxi
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- ${TARGET_KERNEL}
+make -j$(nproc) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- ${TARGET_KERNEL}
 
 #Patching Kernel and adding modules
 echo "${bold}Parchando el Kernel ${yellow}Cubiescreen${reset}" 
 cd ${PWD_F}
 [ ! -d ${PWD_F}/${TMP_F} ] && mkdir -p ${PWD_F}/${TMP_F}
-cp ${PWD_F}/${TMP_F}/cubiescreen/driver/touchscreen/* ${PWD_F}/${KERNEL_F}/drivers/input/touchscreen/
-cp ${PWD_F}/${TMP_F}/cubiescreen/driver/video/disp/* ${PWD_F}/${KERNEL_F}/drivers/video/sunxi/disp/
-cp ${PWD_F}/${TMP_F}/cubiescreen/driver/video/lcd/* ${PWD_F}/${KERNEL_F}/drivers/video/sunxi/lcd/
-cp ${PWD_F}/${TMP_F}/cubiescreen/driver/ctp.h ${PWD_F}/${KERNEL_F}/include/linux/
+tar xvf sources/cubiescreen/cubiescreen_drv.tar \
+   -C ${PWD_F}/${TMP_F}
 
+cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/touchscreen/* \
+  ${PWD_F}/${KERNEL_F}/drivers/input/touchscreen/
+cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/video/disp/* \
+  ${PWD_F}/${KERNEL_F}/drivers/video/sunxi/disp/
+cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/video/lcd/* \
+  ${PWD_F}/${KERNEL_F}/drivers/video/sunxi/lcd/
+cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/ctp.h \
+  ${PWD_F}/${KERNEL_F}/include/linux/
+
+sleep 5
 
 #Building kernel
 echo "${bold}Compilando Kernel ${yellow}${KERNEL_V}${reset}" 
