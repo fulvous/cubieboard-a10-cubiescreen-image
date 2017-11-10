@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source include/colors.sh
+source include/colores.sh
 
 CLONE="false"
 TARGET="Cubieboard"
@@ -24,7 +24,7 @@ cd ${PWD_F}
 #Checking output folder
 echo "${bold}Checando folder ${yellow}${OUTPUT_F}${reset}" 
 cd ${PWD_F}
-[ ! -d ${OUTPUT_F} ] && mkdir ${PWD_F}/${OUTPUT_F}
+[ ! -d ${PWD_F}/${OUTPUT_F} ] && mkdir ${PWD_F}/${OUTPUT_F}
 
 #Configure u-boot
 cd ${PWD_F}/u-boot-sunxi
@@ -38,7 +38,8 @@ make CROSS_COMPILE=arm-linux-gnueabihf-
 #Make fex file
 echo "${bold}Creando ${yellow}script.bin${reset}" 
 cd ${PWD_F}
-fex2bin sources/fex/cubieboard-a10-cubiescreen.fex ${OUTPUT_F}/script.bin
+[ ! -d ${PWD_F}/${OUTPUT_F}/boot ] && mkdir ${PWD_F}/${OUTPUT_F}/boot
+fex2bin sources/fex/cubieboard-a10-cubiescreen.fex ${OUTPUT_F}/boot/script.bin
 
 #Configuring kernel
 echo "${bold}Configurando Kernel ${yellow}${KERNEL_V}${reset}" 
