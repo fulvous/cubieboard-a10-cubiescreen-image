@@ -122,6 +122,7 @@ sudo chroot ${PWD_F}/${TMP_F}/${MOUNT_R} \
   /usr/bin/qemu-arm-static /bin/sh \
   -i /debootstrap/debootstrap --second-stage
 
+source include/custom.sh
 #sudo umount /dev/mapper/${parts[1]}
 
 ##Desmontando particiones loop
