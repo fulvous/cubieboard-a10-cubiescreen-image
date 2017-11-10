@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #Cubiecopiadora realiza imagenes para memoria SD para cubieboard A10
 #Copyright (C) 2017 Leon Ramos @fulvous
 #
@@ -33,7 +35,7 @@
 #along with Cubiecopiadora  If not, see 
 #<http://www.gnu.org/licenses/>.
 
-#!/bin/bash
+set -e
 
 source include/colores.sh
 
@@ -196,7 +198,6 @@ echo " " >> /etc/motd.tail
 
 ##Installing postgresql and python tools
 echo "${bold}Actualizando e instalando ${yellow}paquetes${reset}"
-apt-get update -y
 apt-get install -y \
   python-psycopg2 python-pyside \
   postgresql postgresql-9.4 postgresql-client-9.4 \

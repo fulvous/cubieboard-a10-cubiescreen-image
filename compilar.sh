@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #Cubiecopiadora realiza imagenes para memoria SD para cubieboard A10
 #Copyright (C) 2017 Leon Ramos @fulvous
 #
@@ -32,8 +34,6 @@
 #You should have received a copy of the GNU General Public License
 #along with Cubiecopiadora  If not, see 
 #<http://www.gnu.org/licenses/>.
-
-#!/bin/bash
 
 source include/colores.sh
 

@@ -37,13 +37,21 @@
 
 set -e
 
-bold=`tput bold`
-black=`tput setaf 0` #   0  Black
-red=`tput setaf 1`  #   1 Red
-green=`tput setaf 2`  #   2 Green
-yellow=`tput setaf 3`  #  3 Yellow
-blue=`tput setaf 4`  #  4 Blue
-magenta=`tput setaf 5`  #   5 Magenta
-cyan=`tput setaf 6`  #  6 Cyan
-white=`tput setaf 7`  #   7 White
-reset=`tput sgr0`
+cat <<EOT >> etc/fstab
+none  /tmp  tmpfs defaults,noatime,mode=1777 0 0
+/dev/sda1 /boot vfat  defaults  0 0
+EOT
+
+cat <<EOF > etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 4.2.2.2
+EOF
+
+apt-get update -y
+
+cat <<END > etc/apt/apt.conf.d/71-no-recommends
+APT::Install-Recommends "0";
+APT::Install-Suggests "0";
+END
+
+echo "T0:2345:respawn:/sbin/getty -L ttyS0 115200 vt100" >> etc/inittab
