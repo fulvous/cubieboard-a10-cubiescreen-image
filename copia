@@ -1,0 +1,196 @@
+#!/bin/bash
+
+#Cubiecopiadora realiza imagenes para memoria SD para cubieboard A10
+#Copyright (C) 2017 Leon Ramos @fulvous
+#
+#Este archivo es parte de Cubiecopiadora
+#
+#Cubiecopiadora es software libre: Puede redistribuirlo y/o 
+#modificarlo bajo los terminos de la Licencia de uso publico 
+#general GNU de la Fundacion de software libre, ya sea la
+#version 3 o superior de la licencia.
+#
+#Cubiecopiadora es distribuida con la esperanza de que sera util,
+#pero sin ningun tipo de garantia; inclusive sin la garantia
+#implicita de comercializacion o para un uso particular.
+#Vea la licencia de uso publico general GNU para mas detalles.
+#
+#Deberia de recibir uan copia de la licencia de uso publico
+#general junto con Cubiecopiadora, de lo contrario, vea
+#<http://www.gnu.org/licenses/>.
+#
+#This file is part of Cubiecopiadora
+#
+#Cubiecopiadora is free software: you can redistribute it and/or 
+#modify it under the terms of the GNU General Public License 
+#as published by the Free Software Foundation, either version 3 
+#of the License, or any later version.
+#
+#Cubiecopiadora is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with Cubiecopiadora  If not, see 
+#<http://www.gnu.org/licenses/>.
+
+source herramientax/herramientax
+
+PWD_F="$(pwd)"
+
+#Valores de ejecucion
+VERBOSE=0
+BORRAR=0
+UBOOT_C=1
+KERNEL_C=1
+KERNEL_P=1
+
+#Folders
+KERNEL_F="linux-sunxi"
+UBOOT_F="u-boot-sunxi"
+SALIDA_F="salida"
+TMP_F="tmp"
+FOLDERS="${KERNEL_F} ${UBOOT_F} ${SALIDA_F} ${TMP_F}"
+
+#Valores para compilacion
+TARJETA="Cubieboard"
+CONFIG_TARJETA="sun4i_defconfig"
+KERNEL_V="3.4.79"
+UBOOT_V="sunxi"
+
+function uso {
+  jumbotron \
+  "${BLANCO}$0${AMARILLO} soporta estas opciones:" \
+  "  -k          NO compiles kernel." \
+  "  -p          NO ejecutes ${CYAN}include/patch.sh${RESET}." \
+  "  -u          NO compiles u-boot." \
+  "  -r          Borra todos los directorios." \
+  "  -v          Muestra informacion adicional." \
+  "  -h          Imprime esta ayuda." 
+}
+
+while getopts kpurvh OPT ; do
+  case $OPT in
+    k)
+      KERNEL_C=0
+      ;;
+    p)
+      KERNEL_P=0
+      ;;
+    u)
+      UBOOT_C=0
+      ;;
+    r)
+      BORRAR=1
+      ;;
+    v)
+      VERBOSE=1
+      ;;
+    h)
+      uso
+      exit 0
+      ;;
+    \?)
+      res_err "Opcion invalida" "$OPTARG" "ERROR"
+      uso
+      exit 1
+      ;;
+  esac
+done
+
+#Borrar carpetas
+if [ "${BORRAR}" == "1" ] ; then
+  informa "Borrando" "carpetas" "todas"
+  for folder in ${FOLDERS} ; do
+    if [ -d ${PWD_F}/${folder} ] ; then
+      debug "Borrando ${PWD_F}/$folder"
+      rm -Rf ${PWD_F}/${folder}
+    fi
+  done
+  res_ok "Carpetas borradas" "todas" "Exitoso"
+  debug "Activando compilacion de u-boot y kernel"
+  UBOOT_C=1
+  KERNEL_C=1
+fi
+
+#Descargando u-boot
+if [ ! -d ${UBOOT_F} ] ; then
+  informa "Descargando" "u-boot" "${UBOOT_V}"
+  git clone -b ${UBOOT_V} https://github.com/linux-sunxi/u-boot-sunxi.git ${UBOOT_F}
+  res_ok "Descarga" "u-boot-${UBOOT_V}" "Exitoso"
+else
+  informa "Actualizando" "u-boot" "${UBOOT_V}"
+  cd ${UBOOT_F}
+  git pull
+  cd ${PWD_F}
+fi
+
+#Descargando kernel
+if [ ! -d ${KERNEL_F} ] ; then
+  informa "Descargando" "kernel" "${KERNEL_V}"
+  git clone -b sunxi-${KERNEL_V} https://github.com/linux-sunxi/linux-sunxi.git ${KERNEL_F}
+  res_ok "Descarga" "kernel-${KERNEL_V}" "Exitoso"
+else
+  informa "Actualizando" "kernel" "${KERNEL_V}"
+  cd ${KERNEL_F}
+  git pull
+  cd ${PWD_F}
+fi
+
+#Preparando folders temporales y de salida
+informa "Validando" "folders" "${OUTPUT_F} ${TMP_F}"
+for folder in "${OUTPUT_F} ${TMP_f}"; do
+  [ ! -d ${PWD_F}/${folder} ] && \
+  debug "Creando folder ${PWD_F}/${folder}" && \
+  mkdir ${PWD_F}/${folder}
+done
+rm -fv ${PWD_F}/${TMP_F}/*
+res_ok "Folders existentes" "${OUTPUT_F} ${TMP_F}" "Exitoso"
+
+#Compilando u-boot
+if [ "${UBOOT_C}" == "1" ] ; then
+  informa "Configurando" "u-boot" "${TARJETA}_config"
+  cd ${PWD_F}/${UBOOT_F}
+  make -j$(nproc) CROSS_COMPILE=arm-linux-gnueabihf- ${TARJETA}_config
+  informa "Compilando" "u-boot" "${TARJETA}"
+  make -j$(nproc) CROSS_COMPILE=arm-linux-gnueabihf- 
+  informa "Generando" "script.bin" "${TARJETA}"
+  cd ${PWD_F}
+  fex2bin ${PWD_F}/sources/fex/script.fex \
+  ${PWD_F}/${TMP_F}/script.bin
+  res_ok "Compilacion de" "u-boot-${UBOOT_V}" "Exitoso"
+fi
+
+#Configuración y compilado del kernel
+if [ "${KERNEL_C}" == "1" ] ; then
+
+  informa "Configurando" "kernel" "${KERNEL_V}"
+
+  cd ${PWD_F}/${KERNEL_F}
+
+  make -j$(nproc) ARCH=arm \
+  CROSS_COMPILE=arm-linux-gnueabihf- \
+  ${CONFIG_TARJETA}
+
+  if [ "${KERNEL_P}" == "1" ] ; then
+    informa "Ejecutando" "kernel" "patch.sh"
+    source include/patch.sh
+    sleep 3
+  fi
+
+  informa "Compilando" "kernel" "${KERNEL_V}"
+
+  make -j$(nproc) ARCH=arm \
+  CROSS_COMPILE=arm-linux-gnueabihf- \
+  uImage modules
+
+  informa "Instalando" "módulos" "${KERNEL_V}"
+
+  make ARCH=arm \
+  CROSS_COMPILE=arm-linux-gnueabihf- \
+  INSTALL_MOD_PATH=${PWD_F}/${TMP_F} \
+  modules_install
+  
+  res_ok "Compilacion" "kernel-${KERNEL_V}" "Exitoso"
+fi

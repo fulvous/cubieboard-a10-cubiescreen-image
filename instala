@@ -35,7 +35,7 @@
 #along with Cubiecopiadora  If not, see 
 #<http://www.gnu.org/licenses/>.
 
-BORRAR="no"
+BORRAR=0
 VERBOSE=0
 FOLDERS="herramientax linux-sunxi salida tmp"
 
@@ -76,7 +76,7 @@ EOT
 while getopts rvh OPT ; do
   case $OPT in
     r)
-      BORRAR="si"
+      BORRAR=1
       ;;
     v)
       VERBOSE=1
@@ -93,7 +93,7 @@ while getopts rvh OPT ; do
   esac
 done
 
-if [ "${BORRAR}" == "si" ] ; then
+if [ "${BORRAR}" == "1" ] ; then
   [ $VERBOSE ] && echo "BORRANDO FUENTES"
   for folder in ${FOLDERS} ; do
     [ $VERBOSE ] && echo "Procesando $folder"
