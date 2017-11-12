@@ -145,7 +145,7 @@ for folder in "${OUTPUT_F} ${TMP_f}"; do
   debug "Creando folder ${PWD_F}/${folder}" && \
   mkdir ${PWD_F}/${folder}
 done
-rm -fv ${PWD_F}/${TMP_F}/*
+rm -Rfv ${PWD_F}/${TMP_F}/*
 res_ok "Folders existentes" "${OUTPUT_F} ${TMP_F}" "Exitoso"
 
 #Compilando u-boot
@@ -194,3 +194,5 @@ if [ "${KERNEL_C}" == "1" ] ; then
   
   res_ok "Compilacion" "kernel-${KERNEL_V}" "Exitoso"
 fi
+
+jumbotron "Proceso de compilación terminado"
