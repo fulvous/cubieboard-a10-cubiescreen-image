@@ -35,16 +35,20 @@
 #along with Cubiecopiadora  If not, see 
 #<http://www.gnu.org/licenses/>.
 
-set -e
+cat <<EOT | fmt -
 
-distro=$1
+=================
 
-cat <<EOT > etc/apt/sources.list
-deb http://http.debian.net/debian $distro main contrib non-free
-deb-src http://http.debian.net/debian $distro main contrib non-free
-deb http://http.debian.net/debian $distro-updates main contrib non-free
-deb-src http://http.debian.net/debian $distro-updates main contrib non-free
-deb http://security.debian.org/debian-security $distro/updates main contrib non-free
-deb-src http://security.debian.org/debian-security $distro/updates main contrib non-free
+Bienvenido a Cubiecopiadora
+
+Este programa genera imagenes uSD para Cubieboard A10 con y sin cubiescreen.
+
+Comenzaremos la instalacion de bibliotecas y codigo fuente.
+
+==================
+
 EOT
+
+[ ! -d herramientax ] && git clone https://github.com/fulvous/herramientax.git
+
 

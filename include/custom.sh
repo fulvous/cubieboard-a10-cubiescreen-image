@@ -35,9 +35,7 @@
 #along with Cubiecopiadora  If not, see 
 #<http://www.gnu.org/licenses/>.
 
-set -e
-
-source include/colores.sh
+source /colores.sh
 
 PWD_F="$(pwd)"
 TMP_F="tmp"
@@ -56,16 +54,23 @@ NEW_USER="meganucleo"
 #WALLPAPER_CONFIG="xfce4-desktop.xml"
 
 ##Changing root password
-echo "Change Root PW"
+echo "${bold}Cambiando password de ${yellow}root${reset}"
 echo root:meganucleo|chpasswd
 
-##Erasing Desktop icons
+##Borrando iconos de escritorio
+echo "${bold}Borrando iconos en ${yellow}escritorio${reset}"
 rm -f /etc/skel/Desktop/*.desktop
 
+
+##Installing postgresql and python tools
+echo "${bold}Actualizando e instalando ${yellow}paquetes${reset}"
+apt-get install -y \
+  locales 
+
 ##Generating locales
-locale-gen "en_US.UTF-8"
-locale-gen "C"
-locale-gen "es_MX.UTF-8"
+#locale-gen "en_US.UTF-8"
+#locale-gen "C"
+#locale-gen "es_MX.UTF-8"
 #export LANG=C
 export LANG="es_MX.UTF-8"
 export LANGUAGE="es_MX.UTF-8"
@@ -74,13 +79,18 @@ dpkg-reconfigure locales
 
 ##Creando usuario meganucleo
 echo "${bold}Nuevo usuario ${yellow}${NEW_USER}${reset}"
-adduser --disabled-password --gecos "" $NEW_USER
-echo $NEW_USER:mega1234|chpasswd
-for add_grp in \
-  sudo netdev audio video dialout plugdev bluetooth
-do
-  usermod -aG ${add_grp} ${NEW_USER} 2>/dev/null
-done
+[ "$( cat /etc/passwd | grep ${NEW_USER} -c )" != "1" ] && adduser --disabled-password --gecos "" $NEW_USER
+if [ "$( cat /etc/passwd | grep ${NEW_USER} -c )" == "1" ] ; then
+  echo "${bold}Cambiando password a ${yellow}${NEW_USER}${reset}"
+  echo $NEW_USER:mega1234|chpasswd
+  echo "${bold}Agregando a grupos ${yellow}${NEW_USER}${reset}"
+  #for add_grp in sudo netdev audio video dialout plugdev bluetooth
+  for add_grp in sudo dialout
+  do
+    usermod -aG ${add_grp} ${NEW_USER} 2>/dev/null
+  done
+fi
+
 
 #touch /home/$NEW_USER/.Xauthority
 #chown $NEW_USER:$NEW_USER /home/$NEW_USER/.Xauthority
@@ -120,16 +130,30 @@ echo "ciclope$DATE" > /etc/hostname
 
 ##Cargar modulo ft5x_ts al inicio
 echo "${bold}Agregar a modules ${yellow}ft5x_ts${reset}"
-echo "ft5x_ts" >> /etc/modules
+cat <<EOT > /etc/modules
+ft5x_ts
+mali
+gpio_sunxi
+EOT
 
 ##Quitar la informacion del sistema
 echo "${bold}Quitando informacion de sistema ${reset}"
 echo "Meganucleo CICLOPE" > /etc/issue
 echo "Meganucleo CICLOPE" > /etc/issue.net
 echo "${bold}Cambiando motd ${reset}"
-rm /etc/update-motd.d/*
-echo "Bienvenido a meganucleo CICLOPE ${DATE}" > /etc/motd.tail  
-echo " " >> /etc/motd.tail
+#rm /etc/update-motd.d/*
+echo "Bienvenido a meganucleo CICLOPE ${DATE}" > /etc/motd
+echo " " >> /etc/motd
+
+#Cambiando el prompt
+cat <<EOT >>/home/${NEW_USER}/.bashrc
+
+green='\[`tput setaf 2`\]'  #   2 Green
+yellow='\[`tput setaf 3`\]'  #  3 Yellow
+cyan='\[`tput setaf 6`\]'  #  6 Cyan
+reset='\[`tput sgr0`\]'
+PS1="$cyan\u$reset@$green\h$reset|$yellow\W$reset\n> "
+EOT
 
 ###Evitar que arranquen servicios
 #echo "Removing services from starting"
@@ -200,7 +224,11 @@ echo " " >> /etc/motd.tail
 echo "${bold}Actualizando e instalando ${yellow}paquetes${reset}"
 apt-get install -y \
   python-psycopg2 python-pyside \
-  postgresql postgresql-9.4 postgresql-client-9.4 \
+  postgresql postgresql-9.1 postgresql-client-9.1 \
   postgresql-client-common postgresql-common \
-  postgresql-contrib-9.4 
+  postgresql-contrib-9.1 \
+  sudo vim task-lxde-desktop
+  #postgresql postgresql-9.4 postgresql-client-9.4 \
+  #postgresql-client-common postgresql-common \
+  #postgresql-contrib-9.4 
 

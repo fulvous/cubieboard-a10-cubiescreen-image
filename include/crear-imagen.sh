@@ -127,22 +127,80 @@ echo "${bold}Copiando los ${yellow}modulos${reset}"
 cp -vr ${PWD_F}/${KERNEL_F}/output/lib ${PWD_F}/${TMP_F}/${MOUNT_R}
 
 echo "${bold}Agregando ${yellow}sources.list${reset}"
-chroot ${PWD_F}/${TMP_F}/${MOUNT_R} \
-  /usr/bin/qemu-arm-static /bin/bash \
-  -i include/sources.sh ${DISTRO}
+cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/apt/sources.list
+deb http://http.debian.net/debian $DISTRO main contrib non-free
+deb-src http://http.debian.net/debian $DISTRO main contrib non-free
+deb http://http.debian.net/debian $DISTRO-updates main contrib non-free
+deb-src http://http.debian.net/debian $DISTRO-updates main contrib non-free
+deb http://security.debian.org/debian-security $DISTRO/updates main contrib non-free
+deb-src http://security.debian.org/debian-security $DISTRO/updates main contrib non-free
+EOT
 
 echo "${bold}Agregando archivos de ${yellow}sistema${reset}"
+cat <<EOT >> ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/fstab
+none  /tmp  tmpfs defaults,noatime,mode=1777 0 0
+/dev/mmcblk0p1 /boot vfat  defaults  0 0
+EOT
+
+cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/network/interfaces
+auto lo
+iface lo inet loopback
+allow-hotplug eth0
+iface eth0 inet dhcp
+EOT
+
+cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 4.2.2.2
+EOT
+
+echo "${bold}Montando carpetas ${yellow}proc dev sys${reset}"
+for i in proc dev sys; do 
+  mount -o bind /$i ${PWD_F}/${TMP_F}/${MOUNT_R}/$i
+done
+mount -o bind /dev/pts ${PWD_F}/${TMP_F}/${MOUNT_R}/dev/pts
+
+
+#Actualizar paquetes
+echo "${bold}Actualizando ${yellow}paquetes${reset}"
+cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/tmp/update.sh
+#!/bin/bash
+apt-get update -y
+apt-get upgrade -y
+EOT
+
 chroot ${PWD_F}/${TMP_F}/${MOUNT_R} \
   /usr/bin/qemu-arm-static /bin/bash \
-  -i include/system.sh
+  /tmp/update.sh
+
+rm ${PWD_F}/${TMP_F}/${MOUNT_R}/tmp/update.sh
+
+cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/apt/apt.conf.d/71-no-recommends
+APT::Install-Recommends "0";
+APT::Install-Suggests "0";
+EOT
+
+echo "T0:2345:respawn:/sbin/getty -L ttyS0 115200 vt100" >> ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/inittab
 
 echo "${bold}Ejecutando ${yellow}custom.sh${reset}"
+cp ${PWD_F}/include/colores.sh ${PWD_F}/${TMP_F}/${MOUNT_R}/colores.sh
+cp ${PWD_F}/include/custom.sh ${PWD_F}/${TMP_F}/${MOUNT_R}/custom.sh
 chroot ${PWD_F}/${TMP_F}/${MOUNT_R} \
   /usr/bin/qemu-arm-static /bin/bash \
-  -i include/custom.sh
+  /custom.sh
+rm ${PWD_F}/${TMP_F}/${MOUNT_R}/custom.sh
+rm ${PWD_F}/${TMP_F}/${MOUNT_R}/colores.sh
+
+echo "${bold}Desmontando carpetas ${yellow}proc dev sys${reset}"
+sleep 1
+umount ${PWD_F}/${TMP_F}/${MOUNT_R}/dev/pts
+for i in proc dev sys; do 
+  umount ${PWD_F}/${TMP_F}/${MOUNT_R}/$i
+done
+sleep 1
 umount /dev/mapper/${parts[1]}
 
-##Desmontando particiones loop
-#echo "${bold}Borrando loops ${yellow}${parts[@]}${reset}"
-#kpartx -d ${PWD_F}/${TMP_F}/${TMP_DEV}
+#Desmontando particiones loop
+echo "${bold}Borrando loops ${yellow}${parts[@]}${reset}"
+kpartx -d ${PWD_F}/${TMP_F}/${TMP_DEV}
 

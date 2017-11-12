@@ -37,9 +37,9 @@
 
 source include/colores.sh
 
-CLONE="false"
+CLONE="true"
 TARGET="Cubieboard"
-TARGET_KERNEL="sun4i_defconfig"
+TARGET_CONFIG="sun4i_defconfig"
 PWD_F="$(pwd)"
 OUTPUT_F="output"
 KERNEL_V="3.4.79"
@@ -49,12 +49,18 @@ TMP_F="tmp"
 #Getting u-boot
 echo "${bold}Descargando u-boot ${yellow}u-boot-sunxi.git${reset}" 
 cd ${PWD_F}
-[ "$CLONE" == "true" ] && git clone -b sunxi https://github.com/linux-sunxi/u-boot-sunxi.git
+if [ "$CLONE" == "true" ] ; then
+  [ -d ${PWD_F}/u-boot-sunxi ] && rm -Rf ${PWD_F}/u-boot-sunxi
+  git clone -b sunxi https://github.com/linux-sunxi/u-boot-sunxi.git
+fi
 
 #Getting kernel
 echo "${bold}Descargando kernel ${yellow}linux-sunxi.git${reset}" 
 cd ${PWD_F}
-[ "$CLONE" == "true" ] && git clone -b sunxi-${KERNEL_V} https://github.com/linux-sunxi/linux-sunxi.git
+if [ "$CLONE" == "true" ] ; then
+  [ -d ${PWD_F}/linux-sunxi ] && rm -Rf ${PWD_F}/linux-sunxi
+  git clone -b sunxi-${KERNEL_V} https://github.com/linux-sunxi/linux-sunxi.git
+fi
 
 #Checking output folder
 echo "${bold}Checando folder ${yellow}${OUTPUT_F}${reset}" 
@@ -79,7 +85,7 @@ fex2bin sources/fex/cubieboard-a10-cubiescreen.fex ${OUTPUT_F}/boot/script.bin
 #Configuring kernel
 echo "${bold}Configurando Kernel ${yellow}${KERNEL_V}${reset}" 
 cd ${PWD_F}/linux-sunxi
-make -j$(nproc) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- ${TARGET_KERNEL}
+make -j$(nproc) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- ${TARGET_CONFIG}
 
 #Patching Kernel and adding modules
 echo "${bold}Parchando el Kernel ${yellow}Cubiescreen${reset}" 
@@ -96,6 +102,9 @@ cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/video/lcd/* \
   ${PWD_F}/${KERNEL_F}/drivers/video/sunxi/lcd/
 cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/ctp.h \
   ${PWD_F}/${KERNEL_F}/include/linux/
+
+patch ${PWD_F}/${KERNEL_F}/.config  sources/kernel/config.patch
+patch ${PWD_F}/${KERNEL_F}/drivers/i2c/busses/i2c-sunxi.c  sources/kernel/i2c-sunxi.c.patch
 
 sleep 5
 
