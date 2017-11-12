@@ -3,3 +3,4 @@ u-boot-sunxi
 tmp
 linux-sunxi
 herramientax
+include/custom.sh

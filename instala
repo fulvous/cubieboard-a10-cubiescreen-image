@@ -35,6 +35,11 @@
 #along with Cubiecopiadora  If not, see 
 #<http://www.gnu.org/licenses/>.
 
+BORRAR="no"
+VERBOSE=0
+FOLDERS="herramientax linux-sunxi salida tmp"
+
+function bienvenido {
 cat <<EOT | fmt -
 
 =================
@@ -45,10 +50,72 @@ Este programa genera imagenes uSD para Cubieboard A10 con y sin cubiescreen.
 
 Comenzaremos la instalacion de bibliotecas y codigo fuente.
 
+leon.ramos<arroba>creadoresdigitales.com
+
 ==================
 
 EOT
+}
 
+function uso {
+  echo "$0 tiene las siguientes opciones:"
+  cat <<EOT | fmt -
+  
+  -r     Borra todos los directorios
+         permite descargar de nuevo
+
+  -v     Muestra informacion adicional
+
+  -h     Imprime esta ayuda
+
+EOT
+
+}
+
+
+while getopts rvh OPT ; do
+  case $OPT in
+    r)
+      BORRAR="si"
+      ;;
+    v)
+      VERBOSE=1
+      ;;
+    h)
+      uso
+      exit 0
+      ;;
+    \?)
+      echo "ERROR: Opcion invalida $OPTARG" >&2
+      uso
+      exit 1
+      ;;
+  esac
+done
+
+if [ "${BORRAR}" == "si" ] ; then
+  [ $VERBOSE ] && echo "BORRANDO FUENTES"
+  for folder in ${FOLDERS} ; do
+    [ $VERBOSE ] && echo "Procesando $folder"
+    [ -d $folder ] && rm -Rf $folder
+  done
+fi
+
+[ $VERBOSE ] && echo "DESCARGANDO BIBLIOTECAS"
 [ ! -d herramientax ] && git clone https://github.com/fulvous/herramientax.git
 
+[ $VERBOSE ] && echo "ACTUALIZANDO BIBLIOTECAS"
+if [ -d herramientax ] ; then
+  cd herramientax
+  git pull
+  ./instala
+  cd ..
+fi
+
+source herramientax/herramientax
+
+jumbotron "Bibliotecas instaladas!" \
+  "Ejecuta ${VERDE}copia${RESET} para hacer la nueva imagen." \
+  "Se creara una imagen muy basica, es recomendable que modifiques ${CYAN}include/custom.sh${RESET} para agregar tu codigo y adecuar la imagen." \
+  "Las imagenes resultantes estaran en el folder ${MAGENTA}salida${RESET}"
 
