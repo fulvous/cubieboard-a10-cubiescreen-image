@@ -75,6 +75,7 @@ IMAGEN="${TARJETA}-${KERNEL_V}-$(date +%Y%m%d).img"
 
 DEBOOTSTRAP_I=${DISTRO}-db
 DEBOOTSTRAP_EXT="tar.gz"
+PAQUETES_DB="sudo,vim"
 
 #Checando si es superusuario
 es_root
@@ -127,6 +128,13 @@ while getopts gkpurvh OPT ; do
       ;;
   esac
 done
+
+#Checando configuraciones adicionales
+if [ -f ${PWD_F}/include/configs.sh ] ; then
+  informa "Cargando configuraciones" "${PWD_F}/include/configs.sh"
+  source ${PWD_F}/include/configs.sh
+  res_ok "Cargadas configuraciones" "${PWD_F}/include/configs.sh" "Exitoso"
+fi
 
 #Instalando paquetes necesarios
 informa "Instalando" "Paquetes" "necesarios"
@@ -275,12 +283,11 @@ if [ "$IMAGEN_C" == "1" ] ; then
       if [ "${DEBOOTSTRAP_G}" == "1" ] ; then
         case ${DISTRO} in
           "wheezy")
-            debootstrap --include='sudo,vim,task-lxde-desktop,postgresql' --arch=armhf --foreign ${DISTRO} ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+            PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop"
+            debug "Agregando lxde a paquetes: ${PAQUETES_DB}"
             ;;
         esac
-      else
-        debootstrap --arch=armhf --foreign ${DISTRO} --include='sudo,vim' ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
-      fi
+      debootstrap --arch=armhf --foreign ${DISTRO} --include="${PAQUETES_DB}" ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
 
       cp /usr/bin/qemu-arm-static \
         ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/usr/bin
