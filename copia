@@ -288,7 +288,11 @@ if [ "$IMAGEN_C" == "1" ] ; then
             ;;
         esac
       fi
-      debootstrap --arch=armhf --foreign ${DISTRO} --include="${PAQUETES_DB}" ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+      debug "Corriendo el debootstrap"
+      debootstrap --include=${PAQUETES_DB} \
+      --arch=armhf \
+      --foreign ${DISTRO} \
+      ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
 
       cp /usr/bin/qemu-arm-static \
         ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/usr/bin
