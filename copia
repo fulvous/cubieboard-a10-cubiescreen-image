@@ -37,6 +37,9 @@
 
 source herramientax/herramientax
 
+#Evita que se ejecute el programa si hay errores
+set -e
+
 PWD_F="$(pwd)"
 
 #Valores de ejecucion
@@ -45,13 +48,19 @@ BORRAR=0
 UBOOT_C=1
 KERNEL_C=1
 KERNEL_P=1
+IMAGEN_C=1
+DEBOOTSTRAP_C=1
+DEBOOTSTRAP_G=0
+LOG="${PWD_F}/cubiecopiadora.log"
 
 #Folders
 KERNEL_F="linux-sunxi"
 UBOOT_F="u-boot-sunxi"
 SALIDA_F="salida"
 TMP_F="tmp"
-FOLDERS="${KERNEL_F} ${UBOOT_F} ${SALIDA_F} ${TMP_F}"
+DEBOOTSTRAP_F="sistemas"
+FOLDERS="${KERNEL_F} ${UBOOT_F} ${SALIDA_F} ${TMP_F} ${DEBOOTSTRAP_F}"
+
 
 #Valores para compilacion
 TARJETA="Cubieboard"
@@ -59,9 +68,22 @@ CONFIG_TARJETA="sun4i_defconfig"
 KERNEL_V="3.4.79"
 UBOOT_V="sunxi"
 
+#Valores para la imagen
+DISTRO="wheezy"
+MNT="mnt"
+IMAGEN="${TARJETA}-${KERNEL_V}-$(date +%Y%m%d).img"
+
+DEBOOTSTRAP_I=${DISTRO}-db
+DEBOOTSTRAP_EXT="tar.gz"
+
+#Checando si es superusuario
+es_root
+
 function uso {
   jumbotron \
   "${BLANCO}$0${AMARILLO} soporta estas opciones:" \
+  "  -g          Hacer imagen grafica." \
+  "  -i          NO crear imagen SD." \
   "  -k          NO compiles kernel." \
   "  -p          NO ejecutes ${CYAN}include/patch.sh${RESET}." \
   "  -u          NO compiles u-boot." \
@@ -70,8 +92,15 @@ function uso {
   "  -h          Imprime esta ayuda." 
 }
 
-while getopts kpurvh OPT ; do
+while getopts gkpurvh OPT ; do
   case $OPT in
+    g)
+      DEBOOTSTRAP_G=1
+      DEBOOTSTRAP_I=${DISTRO}-db-g
+      ;;
+    i)
+      IMAGEN_C=0
+      ;;
     k)
       KERNEL_C=0
       ;;
@@ -98,6 +127,14 @@ while getopts kpurvh OPT ; do
       ;;
   esac
 done
+
+#Instalando paquetes necesarios
+informa "Instalando" "Paquetes" "necesarios"
+apt-get install -y \
+  qemu binfmt-support qemu-user-static \
+  gcc-arm-linux-gnueabihf pigz debootstrap \
+  kpartx
+res_ok "Paquetes" "instalados" "Exitoso"
 
 #Borrar carpetas
 if [ "${BORRAR}" == "1" ] ; then
@@ -195,4 +232,245 @@ if [ "${KERNEL_C}" == "1" ] ; then
   res_ok "Compilacion" "kernel-${KERNEL_V}" "Exitoso"
 fi
 
-jumbotron "Proceso de compilación terminado"
+jumbotron "Proceso de compilación terminado" \
+  "Continuando con creación de imagen" \
+  "Se descargara el sistema de archivos y tomara mucho tiempo"
+
+
+### Continuando con el proceso de creacion de imagen
+if [ "$IMAGEN_C" == "1" ] ; then
+  informa "Generando imagen" "uSD" "${IMAGEN}"
+  
+  if [ ! -d ${DEBOOTSTRAP_F} ] ; then
+    debug "No existe la carpeta ${DEBOOTSTRAP_F} generandola..."
+    mkdir ${PWD_F}/${DEBOOTSTRAP_F}
+    debug "Marcando debootstrap para su creacion"
+    DEBOOTSTRAP_C=1
+  fi
+
+  if [ "${DEBOOTSTRAP_C}" == "1" ] ; then
+    informa "Creando imagen" "Debootstrap" "${DEBOOTSTRAP_I}"
+    if [ ! -f ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} ] ; then
+      debug "No existe imagen debootstrap, hay que crearla"
+      [ ! -d ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} ] && \
+        informa "Borrando directorio incompleto" \
+          ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} && \
+        rm -Rf ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+      debug "Creando el directorio ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}"
+      mkdir ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+      informa "Descargando" "paquetes" "${DISTRO}"
+
+      if [ "${DEBOOTSTRAP_G}" == "1" ] ; then
+        case ${DISTRO} in
+          "wheezy")
+            debootstrap --include='sudo,vim,task-lxde-desktop' --arch=armhf --foreign ${DISTRO} ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+            ;;
+        esac
+      else
+        debootstrap --arch=armhf --foreign ${DISTRO} --include='sudo,vim' ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+      fi
+
+      cp /usr/bin/qemu-arm-static \
+        ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/usr/bin
+      chroot ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} \
+        /usr/bin/qemu-arm-static /bin/sh \
+        -i /debootstrap/debootstrap --second-stage
+      informa "Comprimiendo debootstrap" "${DISTRO}" "${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT}"
+      cd ${PWD_F}/${DEBOOTSTRAP_F}
+      tar cf - ${DEBOOTSTRAP_I} | \
+        pigz -9 > ${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} 
+      cd ${PWD_F}
+      debug "Borrando el directorio de trabajo"
+      rm -Rf ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+    else
+      informa "Imagen" "${DEBOOTSTRAP_I}" "Encontrada"
+    fi
+    res_ok "Debootstrap" "creado" "Exitoso"
+  fi
+
+  informa "Creando" "archivo" "temporal"
+  dd if=/dev/zero \
+    of=${PWD_F}/${TMP_F}/${IMAGEN} \
+    bs=1G count=3
+  res_ok "Archivo" "${PWD_F}/${TMP_F}/${IMAGEN}" "Exitoso"
+
+  #Creando dispositivo loop
+  debug "Asignando loop"
+  LOOP="$(losetup -f)"
+  informa "Asignando" "loop" "${LOOP}"
+  losetup ${LOOP} ${PWD_F}/${TMP_F}/${IMAGEN}
+
+  #Instalando boot
+  informa "Instalando" "u-boot"
+  dd if=${PWD_F}/${UBOOT_F}/u-boot-sunxi-with-spl.bin \
+    of=${LOOP} \
+    bs=1024 \
+    seek=8
+  res_ok "U-boot" "instalado" "Exitoso"
+
+  #Particionando loop
+  informa "Particionando" "${LOOP}"
+  sfdisk -R ${LOOP}
+cat <<EOT | sfdisk --in-order -L -uM ${LOOP}
+1,16,c
+,,L
+EOT
+  res_ok "Dispositivo" "particionado" "Exitoso"
+  
+  #Desinstalando loop
+  informa "Desmontando" "loop" "${LOOP}"
+  losetup -d ${LOOP}
+  res_ok "Loop" "desmontado" "Exitoso"
+
+  #Montando con kpartx
+  informa "Montando con" "kpartx" "${TMP_F}/${IMAGEN}"
+  parts=($(kpartx -l ${PWD_F}/${TMP_F}/${IMAGEN} | egrep -o "loop[0-9]{1,2}p[0-9]{1,2}"))
+  kpartx -av ${PWD_F}/${TMP_F}/${IMAGEN}
+
+  #Formateando particiones
+  informa "Formateando" "particion" "${parts[0]}"
+  mkfs.vfat /dev/mapper/${parts[0]}
+  res_ok "Particionada" "${parts[0]}" "Exitoso"
+  informa "Formateando" "particion" "${parts[1]}"
+  mkfs.ext4 /dev/mapper/${parts[1]}
+  res_ok "Particionada" "${parts[1]}" "Exitoso"
+
+  #Copiando particion boot
+  informa "Copiando" "particion" "boot"
+  if [ ! -d ${PWD_F}/${TMP_F}/${MNT} ] ; then
+    debug "No existe la carpeta boot, creandola"
+    mkdir -p ${PWD_F}/${TMP_F}/${MNT}
+  fi
+  mount /dev/mapper/${part[0]} ${PWD_F}/${TMP_F}/${MNT}
+  cp -v ${PWD_F}/${KERNEL_F}/arch/arm/boot/uImage \
+    ${PWD_F}/${TMP_F}/${MNT}
+  cp -v ${PWD_F}/${TMP_F}/script.bin \
+    ${PWD_F}/${TMP_F}/${MNT}
+  umount /dev/mapper/${parts[0]}
+
+  #Copiando particion root
+  informa "Copiando" "Root"
+  mount /dev/mapper/${parts[1]} ${PWD_F}/${TMP_F}/${MNT}
+  debug "Descomprimiendo con pigz"
+  pigz -dc ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} \
+    tar xf -C ${PWD_F}/${TMP_F}/${MNT}
+  res_ok "Archivos descomprimidos en" "root" "Exitoso"
+  informa "Copiando" "modulos"
+  if [ ! -d ${PWD_F}/${TMP_F}/${MNT}/lib/modules ] ; then
+    debug "Creando directorio ${PWD_F}/${TMP_F}/${MNT}/lib/modules"
+    mkdir -p ${PWD_F}/${TMP_F}/${MNT}/lib/modules
+  fi
+  cp -vr ${PWD_F}/${KERNEL_F}/output/lib ${PWD_F}/${TMP_F}/${MNT}
+  res_ok "Copia de modulos" "${KERNEL_V}" "Exitoso"
+
+  #Creando sources.list
+  informa "Agregando" "sources.list"
+cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/apt/sources.list
+deb http://http.debian.net/debian $DISTRO main contrib non-free
+deb-src http://http.debian.net/debian $DISTRO main contrib non-free
+deb http://http.debian.net/debian $DISTRO-updates main contrib non-free
+deb-src http://http.debian.net/debian $DISTRO-updates main contrib non-free
+deb http://security.debian.org/debian-security $DISTRO/updates main contrib non-free
+deb-src http://security.debian.org/debian-security $DISTRO/updates main contrib non-free
+EOT
+  res_ok "Archivo" "Sources.list" "Exitoso"
+  
+  #Agregando entradas a fstab
+  informa "Agregando" "/etc/fstab"
+cat <<EOT >> ${PWD_F}/${TMP_F}/${MNT}/etc/fstab
+none  /tmp  tmpfs defaults,noatime,mode=1777 0 0
+/dev/mmcblk0p1 /boot vfat  defaults  0 0
+EOT
+  res_ok "Archivo cambiado" "/etc/fstab" "Exitoso"
+
+  #Agregando archivo de interfaces
+  informa "Agregando" "/etc/network/interfaces"
+cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/network/interfaces
+auto lo
+iface lo inet loopback
+allow-hotplug eth0
+iface eth0 inet dhcp
+EOT
+  res_ok "Archivo creado" "/etc/network/interfaces" "Exitoso"
+
+  #Agregando archivo resolv.conf
+  informa "Agregando" "/etc/resolv.conf"
+cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 4.2.2.2
+EOT
+  res_ok "Archivo creado" "/etc/resolv.conf" "Exitoso"
+
+  #Montando fs virtuales
+  informa "Montando carpetas" "proc dev dev/pts sys"
+  for i in proc dev sys; do
+    mount -o bind /$i ${PWD_F}/${TMP_F}/${MNT}/$i
+  done
+  mount -o bind /dev/pts ${PWD_F}/${TMP_F}/${MNT}/dev/pts
+  res_ok "Carpetas montadas" "proc dev dev/pts sys" "Exitoso"
+
+  #Actualizar paquetes
+  informa "Actualizando" "paquetes"
+  debug "Creando tmp/update.sh"
+cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/tmp/update.sh
+#!/bin/bash
+apt-get update -y
+apt-get upgrade -y
+EOT
+  debug "Ejecutando tmp/update.sh"
+  chroot ${PWD_F}/${TMP_F}/${MNT} \
+    /usr/bin/qemu-arm-static /bin/bash \
+    /tmp/update.sh
+  debug "Borrando archivo de actualizacion"
+  rm ${PWD_F}/${TMP_F}/${MNT}/tmp/update.sh
+  res_ok "Actualizacion de" "sistema" "Exitoso"
+
+  #Evitar actualizaciones automaticas
+  informa "Evitar actualizaciones" "automaticas"
+cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/apt/apt.conf.d/71-no-recommends
+APT::Install-Recommends "0";
+APT::Install-Suggests "0";
+EOT
+  res_ok "Actualizaciones automaticas" "/etc/apt/apt.conf.d/71-no-recommends" "Exitoso"
+
+  #Asegurarnos de tener terminal serial
+  informa "Habilitar" "terminal serial"
+  echo "T0:2345:respawn:/sbin/getty -L ttyS0 115200 vt100" >> ${PWD_F}/${TMP_F}/${MNT}/etc/inittab
+
+  #Ejecutando los scripts custom
+  informa "Ejecutando" "include/custom.sh"
+  debug "Copiando los scripts a la imagen"
+  cp -v ${PWD_F}/herramientax/formato/colores.sh \
+    ${PWD_F}/${TMP_F}/${MNT}
+  cp -v ${PWD_F}/include/custom.sh \
+    ${PWD_F}/${TMP_F}/${MNT}
+
+  debug "Ejecutando el script en jaula"
+  chroot ${PWD_F}/${TMP_F}/${MNT} \
+    /usr/bin/qemu-arm-static /bin/bash \
+    /custom.sh
+  
+  debug "Borrando los scripts de la imagen"
+  rm ${PWD_F}/${TMP_F}/${MNT}/custom.sh
+  rm ${PWD_F}/${TMP_F}/${MNT}/colores.sh
+  
+  res_ok "Script" "include/custom.sh" "Exitoso"
+  
+  informa "Desmontando" "sistemas de archivos"
+  #Desmontando systemas de archivos
+  sleep 3
+  debug "Desmontando sistemas virtuales"
+  umount ${PWD_F}/${TMP_F}/${MNT}/dev/pts
+  for i in proc dev sys; do
+    umount ${PWD_F}/${TMP_F}/${MNT}/$i
+  done
+  sleep 3
+  umount /dev/mapper/${parts[1]}
+
+  #Desmontando con kpartx
+  debug "Desmontando particiones loop"
+  kpartx -d ${PWD_F}/${TMP_F}/${IMAGEN}
+  res_ok "Particion desmontada" "${PWD_F}/${TMP_F}/${IMAGEN}" "Exitoso"
+
+fi
+
