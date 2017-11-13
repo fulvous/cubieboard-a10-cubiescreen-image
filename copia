@@ -254,7 +254,7 @@ fi
 
 jumbotron "Proceso de compilación terminado" \
   "Continuando con creación de imagen" \
-  "Se descargara el sistema de archivos y tomara mucho tiempo"
+  "Se descargara el sistema de archivos si no existe"
 
 
 ### Continuando con el proceso de creacion de imagen
@@ -287,6 +287,7 @@ if [ "$IMAGEN_C" == "1" ] ; then
             debug "Agregando lxde a paquetes: ${PAQUETES_DB}"
             ;;
         esac
+      fi
       debootstrap --arch=armhf --foreign ${DISTRO} --include="${PAQUETES_DB}" ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
 
       cp /usr/bin/qemu-arm-static \
