@@ -171,7 +171,7 @@ if [ ! -d ${KERNEL_F} ] ; then
 else
   informa "Actualizando" "kernel" "${KERNEL_V}"
   cd ${KERNEL_F}
-  git pull
+  git pull https://github.com/linux-sunxi/linux-sunxi.git 
   cd ${PWD_F}
 fi
 
@@ -215,6 +215,8 @@ if [ "${KERNEL_C}" == "1" ] ; then
   if [ "${KERNEL_P}" == "1" ] ; then
     informa "Ejecutando" "kernel" "patch.sh"
     cd ${PWD_F}
+    [ ! -d ${PWD_F}/${TMP_F} ] && \
+      mkdir -p ${PWD_F}/${TMP_F}
     source include/patch.sh
     sleep 3
   fi
@@ -262,7 +264,7 @@ if [ "$IMAGEN_C" == "1" ] ; then
     informa "Creando imagen" "Debootstrap" "${DEBOOTSTRAP_I}"
     if [ ! -f ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} ] ; then
       debug "No existe imagen debootstrap, hay que crearla"
-      [ ! -d ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} ] && \
+      [ -d ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} ] && \
         informa "Borrando directorio incompleto" \
           ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} && \
         rm -Rf ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
@@ -273,7 +275,7 @@ if [ "$IMAGEN_C" == "1" ] ; then
       if [ "${DEBOOTSTRAP_G}" == "1" ] ; then
         case ${DISTRO} in
           "wheezy")
-            debootstrap --include='sudo,vim,task-lxde-desktop' --arch=armhf --foreign ${DISTRO} ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+            debootstrap --include='sudo,vim,task-lxde-desktop,postgresql' --arch=armhf --foreign ${DISTRO} ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
             ;;
         esac
       else
@@ -366,7 +368,7 @@ EOT
   debug "Descomprimiendo con pigz"
   cd ${PWD_F}/${TMP_F}/${MNT} 
   pigz -dc ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} \
-    | tar xf -
+    | tar xf - --strip 1
   cd ${PWD_F}
   res_ok "Archivos descomprimidos en" "root" "Exitoso"
   informa "Copiando" "modulos"
@@ -379,7 +381,7 @@ EOT
 
   #Creando sources.list
   informa "Agregando" "sources.list"
-cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/apt/sources.list
+cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/apt/sources.list
 deb http://http.debian.net/debian $DISTRO main contrib non-free
 deb-src http://http.debian.net/debian $DISTRO main contrib non-free
 deb http://http.debian.net/debian $DISTRO-updates main contrib non-free
@@ -399,7 +401,7 @@ EOT
 
   #Agregando archivo de interfaces
   informa "Agregando" "/etc/network/interfaces"
-cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/network/interfaces
+cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/network/interfaces
 auto lo
 iface lo inet loopback
 allow-hotplug eth0
@@ -409,7 +411,7 @@ EOT
 
   #Agregando archivo resolv.conf
   informa "Agregando" "/etc/resolv.conf"
-cat <<EOT > ${PWD_F}/${TMP_F}/${MOUNT_R}/etc/resolv.conf
+cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/resolv.conf
 nameserver 8.8.8.8
 nameserver 4.2.2.2
 EOT

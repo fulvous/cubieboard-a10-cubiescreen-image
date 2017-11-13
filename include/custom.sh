@@ -224,9 +224,8 @@ EOT
 echo "${NEGRITAS}Actualizando e instalando ${AMARILLO}paquetes${RESET}"
 apt-get install -y \
   python-psycopg2 python-pyside \
-  postgresql postgresql-9.1 postgresql-client-9.1 \
-  postgresql-client-common postgresql-common \
-  postgresql-contrib-9.1 \
+  #postgresql-9.1 postgresql-client-9.1 \
+  #postgresql-client-common postgresql-common \
   sudo vim task-lxde-desktop
   #postgresql postgresql-9.4 postgresql-client-9.4 \
   #postgresql-client-common postgresql-common \
