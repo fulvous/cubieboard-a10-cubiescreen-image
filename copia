@@ -354,8 +354,10 @@ EOT
   informa "Copiando" "Root"
   mount /dev/mapper/${parts[1]} ${PWD_F}/${TMP_F}/${MNT}
   debug "Descomprimiendo con pigz"
+  cd ${PWD_F}/${TMP_F}/${MNT} 
   pigz -dc ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} \
-    | tar xf -C ${PWD_F}/${TMP_F}/${MNT}
+    | tar xf -
+  cd ${PWD_F}
   res_ok "Archivos descomprimidos en" "root" "Exitoso"
   informa "Copiando" "modulos"
   if [ ! -d ${PWD_F}/${TMP_F}/${MNT}/lib/modules ] ; then
