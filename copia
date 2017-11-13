@@ -195,7 +195,7 @@ if [ "${UBOOT_C}" == "1" ] ; then
   informa "Generando" "script.bin" "${TARJETA}"
   cd ${PWD_F}
   fex2bin ${PWD_F}/sources/fex/script.fex \
-  ${PWD_F}/${TMP_F}/script.bin
+  ${PWD_F}/${DEBOOTSTRAP_F}/script.bin
   res_ok "Compilacion de" "u-boot-${UBOOT_V}" "Exitoso"
 fi
 
@@ -341,10 +341,12 @@ EOT
     debug "No existe la carpeta boot, creandola"
     mkdir -p ${PWD_F}/${TMP_F}/${MNT}
   fi
-  mount /dev/mapper/${part[0]} ${PWD_F}/${TMP_F}/${MNT}
+  mount /dev/mapper/${parts[0]} ${PWD_F}/${TMP_F}/${MNT}
   cp -v ${PWD_F}/${KERNEL_F}/arch/arm/boot/uImage \
     ${PWD_F}/${TMP_F}/${MNT}
-  cp -v ${PWD_F}/${TMP_F}/script.bin \
+  [ ! -d ${PWD_F}/${DEBOOTSTRAP_F} ] && \
+    mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}
+  cp -v ${PWD_F}/${DEBOOTSTRAP_F}/script.bin \
     ${PWD_F}/${TMP_F}/${MNT}
   umount /dev/mapper/${parts[0]}
 
@@ -353,7 +355,7 @@ EOT
   mount /dev/mapper/${parts[1]} ${PWD_F}/${TMP_F}/${MNT}
   debug "Descomprimiendo con pigz"
   pigz -dc ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} \
-    tar xf -C ${PWD_F}/${TMP_F}/${MNT}
+    | tar xf -C ${PWD_F}/${TMP_F}/${MNT}
   res_ok "Archivos descomprimidos en" "root" "Exitoso"
   informa "Copiando" "modulos"
   if [ ! -d ${PWD_F}/${TMP_F}/${MNT}/lib/modules ] ; then

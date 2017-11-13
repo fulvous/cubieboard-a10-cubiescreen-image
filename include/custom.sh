@@ -54,16 +54,16 @@ NEW_USER="meganucleo"
 #WALLPAPER_CONFIG="xfce4-desktop.xml"
 
 ##Changing root password
-echo "${bold}Cambiando password de ${yellow}root${reset}"
+echo "${NEGRITAS}Cambiando password de ${AMARILLO}root${RESET}"
 echo root:meganucleo|chpasswd
 
 ##Borrando iconos de escritorio
-echo "${bold}Borrando iconos en ${yellow}escritorio${reset}"
+echo "${NEGRITAS}Borrando iconos en ${AMARILLO}escritorio${RESET}"
 rm -f /etc/skel/Desktop/*.desktop
 
 
 ##Installing postgresql and python tools
-echo "${bold}Actualizando e instalando ${yellow}paquetes${reset}"
+echo "${NEGRITAS}Actualizando e instalando ${AMARILLO}paquetes${RESET}"
 apt-get install -y \
   locales 
 
@@ -78,12 +78,12 @@ export LC_ALL="es_MX.UTF-8"
 dpkg-reconfigure locales
 
 ##Creando usuario meganucleo
-echo "${bold}Nuevo usuario ${yellow}${NEW_USER}${reset}"
+echo "${NEGRITAS}Nuevo usuario ${AMARILLO}${NEW_USER}${RESET}"
 [ "$( cat /etc/passwd | grep ${NEW_USER} -c )" != "1" ] && adduser --disabled-password --gecos "" $NEW_USER
 if [ "$( cat /etc/passwd | grep ${NEW_USER} -c )" == "1" ] ; then
-  echo "${bold}Cambiando password a ${yellow}${NEW_USER}${reset}"
+  echo "${NEGRITAS}Cambiando password a ${AMARILLO}${NEW_USER}${RESET}"
   echo $NEW_USER:mega1234|chpasswd
-  echo "${bold}Agregando a grupos ${yellow}${NEW_USER}${reset}"
+  echo "${NEGRITAS}Agregando a grupos ${AMARILLO}${NEW_USER}${RESET}"
   #for add_grp in sudo netdev audio video dialout plugdev bluetooth
   for add_grp in sudo dialout
   do
@@ -102,7 +102,7 @@ fi
 #fi
 
 ##Changing hostname
-echo "${bold}Cambiando hostname ${yellow}ciclope${DATE}${reset}"
+echo "${NEGRITAS}Cambiando hostname ${AMARILLO}ciclope${DATE}${RESET}"
 echo "ciclope$DATE" > /etc/hostname
 
 ###Fex section
@@ -129,7 +129,7 @@ echo "ciclope$DATE" > /etc/hostname
 
 
 ##Cargar modulo ft5x_ts al inicio
-echo "${bold}Agregar a modules ${yellow}ft5x_ts${reset}"
+echo "${NEGRITAS}Agregar a modules ${AMARILLO}ft5x_ts${RESET}"
 cat <<EOT > /etc/modules
 ft5x_ts
 mali
@@ -137,10 +137,10 @@ gpio_sunxi
 EOT
 
 ##Quitar la informacion del sistema
-echo "${bold}Quitando informacion de sistema ${reset}"
+echo "${NEGRITAS}Quitando informacion de sistema ${RESET}"
 echo "Meganucleo CICLOPE" > /etc/issue
 echo "Meganucleo CICLOPE" > /etc/issue.net
-echo "${bold}Cambiando motd ${reset}"
+echo "${NEGRITAS}Cambiando motd ${RESET}"
 #rm /etc/update-motd.d/*
 echo "Bienvenido a meganucleo CICLOPE ${DATE}" > /etc/motd
 echo " " >> /etc/motd
@@ -148,11 +148,11 @@ echo " " >> /etc/motd
 #Cambiando el prompt
 cat <<EOT >>/home/${NEW_USER}/.bashrc
 
-green='\[`tput setaf 2`\]'  #   2 Green
-yellow='\[`tput setaf 3`\]'  #  3 Yellow
-cyan='\[`tput setaf 6`\]'  #  6 Cyan
-reset='\[`tput sgr0`\]'
-PS1="$cyan\u$reset@$green\h$reset|$yellow\W$reset\n> "
+VERDE='\[`tput setaf 2`\]'  #   2 Green
+AMARILLO='\[`tput setaf 3`\]'  #  3 Yellow
+CYAN='\[`tput setaf 6`\]'  #  6 Cyan
+RESET='\[`tput sgr0`\]'
+PS1="$CYAN\u$RESET@$VERDE\h$RESET|$AMARILLO\W$RESET\n> "
 EOT
 
 ###Evitar que arranquen servicios
@@ -182,7 +182,7 @@ EOT
 #chmod +x /etc/network/if-pre-up.d/iptables
 
 ###Sobreescribiendo la config de sshd
-#echo "${bold}Modificando configuracion ${yellow}sshd${reset}"
+#echo "${NEGRITAS}Modificando configuracion ${AMARILLO}sshd${RESET}"
 #cp /sshd_config /etc/ssh/sshd_config
 
 ###Overwritting sudoers file
@@ -221,7 +221,7 @@ EOT
 #cp /tmp/overlay/system/rsyslog.d/01-blocklist.conf /etc/rsyslog.d/01-blocklist.conf
 
 ##Installing postgresql and python tools
-echo "${bold}Actualizando e instalando ${yellow}paquetes${reset}"
+echo "${NEGRITAS}Actualizando e instalando ${AMARILLO}paquetes${RESET}"
 apt-get install -y \
   python-psycopg2 python-pyside \
   postgresql postgresql-9.1 postgresql-client-9.1 \
