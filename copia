@@ -194,8 +194,10 @@ if [ "${UBOOT_C}" == "1" ] ; then
   make -j$(nproc) CROSS_COMPILE=arm-linux-gnueabihf- 
   informa "Generando" "script.bin" "${TARJETA}"
   cd ${PWD_F}
+  [ ! -d ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V} ] && \
+    mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}
   fex2bin ${PWD_F}/sources/fex/script.fex \
-  ${PWD_F}/${DEBOOTSTRAP_F}/script.bin
+  ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/script.bin
   res_ok "Compilacion de" "u-boot-${UBOOT_V}" "Exitoso"
 fi
 
@@ -212,23 +214,31 @@ if [ "${KERNEL_C}" == "1" ] ; then
 
   if [ "${KERNEL_P}" == "1" ] ; then
     informa "Ejecutando" "kernel" "patch.sh"
+    cd ${PWD_F}
     source include/patch.sh
     sleep 3
   fi
 
   informa "Compilando" "kernel" "${KERNEL_V}"
 
+  cd ${PWD_F}/${KERNEL_F}
+
   make -j$(nproc) ARCH=arm \
   CROSS_COMPILE=arm-linux-gnueabihf- \
   uImage modules
 
-  informa "Instalando" "módulos" "${KERNEL_V}"
+  informa "Instalando" "modulos" "${KERNEL_V}"
+
+  [ ! -d ${PWD_F}/${DEBOOTSTRAP_F}/${KERNEL_V} ] && \
+    mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}/${KERNEL_V}
 
   make ARCH=arm \
   CROSS_COMPILE=arm-linux-gnueabihf- \
-  INSTALL_MOD_PATH=${PWD_F}/${TMP_F} \
+  INSTALL_MOD_PATH=${PWD_F}/${DEBOOTSTRAP_F}/${KERNEL_V} \
   modules_install
   
+  cd ${PWD_F}
+
   res_ok "Compilacion" "kernel-${KERNEL_V}" "Exitoso"
 fi
 
@@ -344,9 +354,9 @@ EOT
   mount /dev/mapper/${parts[0]} ${PWD_F}/${TMP_F}/${MNT}
   cp -v ${PWD_F}/${KERNEL_F}/arch/arm/boot/uImage \
     ${PWD_F}/${TMP_F}/${MNT}
-  [ ! -d ${PWD_F}/${DEBOOTSTRAP_F} ] && \
+  [ ! -d ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V} ] && \
     mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}
-  cp -v ${PWD_F}/${DEBOOTSTRAP_F}/script.bin \
+  cp -v ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/script.bin \
     ${PWD_F}/${TMP_F}/${MNT}
   umount /dev/mapper/${parts[0]}
 
@@ -364,7 +374,7 @@ EOT
     debug "Creando directorio ${PWD_F}/${TMP_F}/${MNT}/lib/modules"
     mkdir -p ${PWD_F}/${TMP_F}/${MNT}/lib/modules
   fi
-  cp -vr ${PWD_F}/${KERNEL_F}/output/lib ${PWD_F}/${TMP_F}/${MNT}
+  cp -vr ${PWD_F}/${DEBOOTSTRAP_F}/${KERNEL_V}/lib ${PWD_F}/${TMP_F}/${MNT}
   res_ok "Copia de modulos" "${KERNEL_V}" "Exitoso"
 
   #Creando sources.list
