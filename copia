@@ -289,7 +289,7 @@ if [ "$IMAGEN_C" == "1" ] ; then
         esac
       fi
       debug "Corriendo el debootstrap"
-      debootstrap --include=${PAQUETES_DB} \
+      debootstrap --include="${PAQUETES_DB}" \
       --arch=armhf \
       --foreign ${DISTRO} \
       ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
@@ -499,6 +499,16 @@ EOT
   debug "Desmontando particiones loop"
   kpartx -d ${PWD_F}/${TMP_F}/${IMAGEN}
   res_ok "Particion desmontada" "${PWD_F}/${TMP_F}/${IMAGEN}" "Exitoso"
+
+  #Moviendo la imagen a la carpeta de salida
+  if [ ! -d ${PWD_F}/${SALIDA_F} ] ; then
+    informa "Creando la carpeta de salida" "${PWD_F}/${SALIDA_F}"
+    mkdir -p ${PWD_F}/${SALIDA_F}
+  fi
+  informa "Moviendo imagen de folder temporal a" "salida" 
+  cp -v ${PWD_F}/${TMP_F}/${IMAGEN}  \
+    ${PWD_F}/${SALIDA_F}
+  res_ok "Imagen ${IMAGEN} copiada a" "${PWD_F}/${SALIDA_F}" "Exitoso"
 
 fi
 
