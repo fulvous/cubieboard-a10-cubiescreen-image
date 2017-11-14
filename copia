@@ -53,6 +53,10 @@ DEBOOTSTRAP_C=1
 DEBOOTSTRAP_G=0
 LOG="${PWD_F}/cubiecopiadora.log"
 
+#Locales
+export LANG=C
+export LC_ALL=C
+
 #Folders
 KERNEL_F="linux-sunxi"
 UBOOT_F="u-boot-sunxi"
@@ -289,14 +293,14 @@ if [ "$IMAGEN_C" == "1" ] ; then
         esac
       fi
       debug "Corriendo el debootstrap"
-      debootstrap --include="${PAQUETES_DB}" \
+      LANG=C debootstrap --include="${PAQUETES_DB}" \
       --arch=armhf \
       --foreign ${DISTRO} \
       ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
 
       cp /usr/bin/qemu-arm-static \
         ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/usr/bin
-      chroot ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} \
+      LANG=C chroot ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} \
         /usr/bin/qemu-arm-static /bin/sh \
         -i /debootstrap/debootstrap --second-stage
       informa "Comprimiendo debootstrap" "${DISTRO}" "${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT}"
@@ -446,7 +450,7 @@ apt-get update -y
 apt-get upgrade -y
 EOT
   debug "Ejecutando tmp/update.sh"
-  chroot ${PWD_F}/${TMP_F}/${MNT} \
+  LANG=C chroot ${PWD_F}/${TMP_F}/${MNT} \
     /usr/bin/qemu-arm-static /bin/bash \
     /tmp/update.sh
   debug "Borrando archivo de actualizacion"
@@ -474,7 +478,7 @@ EOT
     ${PWD_F}/${TMP_F}/${MNT}
 
   debug "Ejecutando el script en jaula"
-  chroot ${PWD_F}/${TMP_F}/${MNT} \
+  LANG=C chroot ${PWD_F}/${TMP_F}/${MNT} \
     /usr/bin/qemu-arm-static /bin/bash \
     /custom.sh
   
