@@ -283,7 +283,7 @@ if [ "$IMAGEN_C" == "1" ] ; then
       if [ "${DEBOOTSTRAP_G}" == "1" ] ; then
         case ${DISTRO} in
           "wheezy")
-            PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop"
+            PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop,openbox-themes,gnome-icon-theme,libgdk-pixbuf2.0-dev"
             debug "Agregando lxde a paquetes: ${PAQUETES_DB}"
             ;;
         esac

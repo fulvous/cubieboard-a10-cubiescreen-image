@@ -44,6 +44,7 @@ MOUNT_R="mnt"
 OUTPUT_F="output"
 KERNEL_F="linux-sunxi"
 DISTRO="wheezy"
+LOCALES="es_MX.UTF8 UTF-8"
 
 NEW_USER="meganucleo"
 #WALLPPR="meganucleo_wallpaper-3840x2160.jpg"
@@ -68,14 +69,11 @@ apt-get install -y \
   locales 
 
 ##Generating locales
-#locale-gen "en_US.UTF-8"
-#locale-gen "C"
-#locale-gen "es_MX.UTF-8"
-#export LANG=C
-export LANG="es_MX.UTF-8"
-export LANGUAGE="es_MX.UTF-8"
-export LC_ALL="es_MX.UTF-8"
-dpkg-reconfigure locales
+informa "Generando locales correctos" "${LOCALES}"
+cat <<EOT > /etc/locale.gen
+${LOCALES}
+EOT
+locale-gen
 
 ##Creando usuario meganucleo
 echo "${NEGRITAS}Nuevo usuario ${AMARILLO}${NEW_USER}${RESET}"
@@ -223,10 +221,10 @@ EOT
 ##Installing postgresql and python tools
 echo "${NEGRITAS}Actualizando e instalando ${AMARILLO}paquetes${RESET}"
 apt-get install -y \
-  python-psycopg2 python-pyside \
+  python-psycopg2 python-pyside
   #postgresql-9.1 postgresql-client-9.1 \
   #postgresql-client-common postgresql-common \
-  sudo vim task-lxde-desktop
+  #sudo vim task-lxde-desktop
   #postgresql postgresql-9.4 postgresql-client-9.4 \
   #postgresql-client-common postgresql-common \
   #postgresql-contrib-9.4 
