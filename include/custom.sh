@@ -45,8 +45,10 @@ OUTPUT_F="output"
 KERNEL_F="linux-sunxi"
 DISTRO="wheezy"
 LOCALES="es_MX.UTF8 UTF-8"
+NOMBRE_HOST="ciclope"
 
 NEW_USER="meganucleo"
+FECHA="$(date +%Y%m%d)"
 #WALLPPR="meganucleo_wallpaper-3840x2160.jpg"
 #REPLACEW="meganucleo_wallpaper.jpg"
 #WALLPAPER_FOLDER="/usr/share/backgrounds/xfce"
@@ -69,7 +71,7 @@ apt-get install -y \
   locales 
 
 ##Generating locales
-informa "Generando locales correctos" "${LOCALES}"
+echo "Generando locales correctos" "${LOCALES}"
 cat <<EOT > /etc/locale.gen
 ${LOCALES}
 EOT
@@ -100,12 +102,9 @@ fi
 #fi
 
 ##Changing hostname
-echo "${NEGRITAS}Cambiando hostname ${AMARILLO}ciclope${DATE}${RESET}"
-echo "ciclope$DATE" > /etc/hostname
-
-###Fex section
-#echo "Installing custom fex" 
-#fex2bin /tmp/overlay/system/cubieboard-a10-cubiescreen.fex /boot/script.bin
+echo "${NEGRITAS}Cambiando hostname ${AMARILLO}ciclope${FECHA}${RESET}"
+echo "${NOMBRE_HOST}${FECHA}" > /etc/hostname
+`sed -i '1s/^127\.0\.0\.1.*/127.0.0.1\tlocalhost\t${NOMBRE_HOST}${FECHA}/' /etc/hosts`
 
 ###Xorg configuration
 #echo "Installing xorg config" 
@@ -127,11 +126,12 @@ echo "ciclope$DATE" > /etc/hostname
 
 
 ##Cargar modulo ft5x_ts al inicio
-echo "${NEGRITAS}Agregar a modules ${AMARILLO}ft5x_ts${RESET}"
+echo "${NEGRITAS}Agregar a modules ${AMARILLO}ft5x_ts, mali, sunxi-emac${RESET}"
 cat <<EOT > /etc/modules
 ft5x_ts
 mali
 gpio_sunxi
+sunxi-emac
 EOT
 
 ##Quitar la informacion del sistema
@@ -140,7 +140,7 @@ echo "Meganucleo CICLOPE" > /etc/issue
 echo "Meganucleo CICLOPE" > /etc/issue.net
 echo "${NEGRITAS}Cambiando motd ${RESET}"
 #rm /etc/update-motd.d/*
-echo "Bienvenido a meganucleo CICLOPE ${DATE}" > /etc/motd
+echo "Bienvenido a meganucleo CICLOPE ${FECHA}" > /etc/motd
 echo " " >> /etc/motd
 
 #Cambiando el prompt
@@ -151,6 +151,100 @@ AMARILLO='\[`tput setaf 3`\]'  #  3 Yellow
 CYAN='\[`tput setaf 6`\]'  #  6 Cyan
 RESET='\[`tput sgr0`\]'
 PS1="$CYAN\u$RESET@$VERDE\h$RESET|$AMARILLO\W$RESET\n> "
+EOT
+
+#Cambiando el archivo de evdev en xorg.d
+cat <<EOT >/usr/share/X11/xorg.conf.d/10-evdev.conf
+#
+# Catch-all evdev loader for udev-based systems
+# We don't simply match on any device since that also adds accelerometers
+# and other devices that we don't really want to use. The list below
+# matches everything but joysticks.
+
+Section "InputClass"
+        Identifier "evdev pointer catchall"
+        MatchIsPointer "on"
+        MatchDevicePath "/dev/input/event*"
+        Driver "evdev"
+EndSection
+
+Section "InputClass"
+        Identifier "evdev keyboard catchall"
+        MatchIsKeyboard "on"
+        MatchDevicePath "/dev/input/event*"
+        Driver "evdev"
+EndSection
+
+Section "InputClass"
+        Identifier "evdev touchpad catchall"
+        MatchIsTouchpad "on"
+        MatchDevicePath "/dev/input/event*"
+        Driver "evdev"
+EndSection
+
+Section "InputClass"
+        Identifier "evdev tablet catchall"
+        MatchIsTablet "on"
+        MatchDevicePath "/dev/input/event*"
+        Driver "evdev"
+EndSection
+
+Section "InputClass"
+       Identifier "evdev touchscreen catchall"
+       MatchIsTouchscreen "on"
+       MatchDevicePath "/dev/input/event*"
+       Driver "evdev"
+       MatchProduct "ft5x_ts"
+       #Option "Calibration" "14 807 18 490"
+       #Option "Calibration" "8 404 2 252"
+       #Option "Calibration" "0 800 0 480"
+       Option "Mode" "Absolute"
+EndSection
+EOT
+
+#Agregando configuración de aceleración a Xorg
+cat <<EOT >/usr/share/X11/xorg.conf.d/exynos.conf
+Section "Device"
+        Identifier      "Mali FBDEV"
+        Driver          "fbdev"
+        Option          "fbdev"                 "/dev/fb0"
+        Option          "Fimg2DExa"             "false"
+        Option          "DRI2"                  "true"
+        Option          "DRI2_PAGE_FLIP"        "false"
+        Option          "DRI2_WAIT_VSYNC"       "true"
+#       Option          "Fimg2DExaSolid"        "false"
+#       Option          "Fimg2DExaCopy"         "false"
+#       Option          "Fimg2DExaComposite"    "false"
+        Option          "SWcursorLCD"           "false"
+EndSection
+ 
+Section "Screen"
+        Identifier      "DefaultScreen"
+        Device          "Mali FBDEV"
+        DefaultDepth    24
+EndSection
+EOT
+
+#Autoarrancando usuario en entorno gráfico
+echo "${NEGRITAS}Auto-arrancand usuario ${AMARILLO}${NEW_USER}${RESET}"
+cat <<EOT > /etc/lightdm/lightdm.conf
+[SeatDefaults]
+autologin-user=meganucleo
+autologin-user-timeout=0
+greeter-session=lightdm-greeter
+user-session=lxsession
+xserver-allow-tcp=false
+session-wrapper=/etc/X11/Xsession
+EOT
+
+#Evitando el screensaver
+echo "${NEGRITAS}Evitando el ${AMARILLO}ScreenSaver${RESET}"
+cat <<EOT > /etc/xdg/lxsession/LXDE/autostart
+@lxpanel --profile LXDE
+@pcmanfm --desktop --profile LXDE
+@xset s off
+@xset -dpms
+@xset s noblank
 EOT
 
 ###Evitar que arranquen servicios
@@ -221,6 +315,7 @@ EOT
 ##Installing postgresql and python tools
 echo "${NEGRITAS}Actualizando e instalando ${AMARILLO}paquetes${RESET}"
 apt-get install -y \
+  network-manager network-manager-openvpn \
   python-psycopg2 python-pyside
   #postgresql-9.1 postgresql-client-9.1 \
   #postgresql-client-common postgresql-common \

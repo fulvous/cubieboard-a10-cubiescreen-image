@@ -81,6 +81,12 @@ DEBOOTSTRAP_I=${DISTRO}-db
 DEBOOTSTRAP_EXT="tar.gz"
 PAQUETES_DB="sudo,vim"
 
+case ${DISTRO} in
+  wheezy)
+    PAQUETES_DB="${PAQUETES_DB},wpasupplicant,wireless-tools,i2c-tools"
+    ;;
+esac
+
 #Checando si es superusuario
 es_root
 
@@ -287,7 +293,7 @@ if [ "$IMAGEN_C" == "1" ] ; then
       if [ "${DEBOOTSTRAP_G}" == "1" ] ; then
         case ${DISTRO} in
           "wheezy")
-            PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop,openbox-themes,gnome-icon-theme,libgdk-pixbuf2.0-dev"
+            PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop,openbox-themes,gnome-icon-theme,libgdk-pixbuf2.0-dev,pixmap,network-manager-gnome"
             debug "Agregando lxde a paquetes: ${PAQUETES_DB}"
             ;;
         esac

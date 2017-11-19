@@ -1,3 +1,4 @@
 #!/bin/bash
 
-PAQUETES_DB="sudo,vim,postgresql"
+#wheezy
+PAQUETES_DB="sudo,vim,postgresql,openssh-server,iwlist"
