@@ -100,6 +100,13 @@ echo "${NEGRITAS}Creando archivo ${AMARILLO}.Xauthority${RESET}"
 touch /home/$NEW_USER/.Xauthority
 chown $NEW_USER:$NEW_USER /home/$NEW_USER/.Xauthority
 
+##Forzando arranque directo a X
+echo "${NEGRITAS}Forzando arranque directo a ${AMARILLO}X${RESET}"
+cat <<EOT > /home/${NEW_USER}/.dmrc
+[Desktop]
+Session=lightdm-xsession
+EOT
+
 ###Enabling desktop environment
 #if [ -f /etc/init.d/nodm ] ; then
 #  sed -i "s/NODM_USER=\(.*\)/NODM_USER=${NEW_USER}/" /etc/default/nodm
