@@ -53,9 +53,25 @@ DEBOOTSTRAP_C=1
 DEBOOTSTRAP_G=0
 LOG="${PWD_F}/cubiecopiadora.log"
 
+
 #Locales
-export LANG=C
-export LC_ALL=C
+LOCAL="es_MX.UTF-8"
+LENGUAJE="es_MX:es"
+export LANG=$LOCAL
+export LANGUAGE=$LENGUAJE
+export LC_CTYPE=$LOCAL
+export LC_NUMERIC=$LOCAL
+export LC_TIME=$LOCAL
+export LC_COLLATE=$LOCAL
+export LC_MONETARY=$LOCAL
+export LC_MESSAGES=$LOCAL
+export LC_PAPER=$LOCAL
+export LC_NAME=$LOCAL
+export LC_ADDRESS=$LOCAL
+export LC_TELEPHONE=$LOCAL
+export LC_MEASUREMENT=$LOCAL
+export LC_IDENTIFICATION=$LOCAL
+export LC_ALL=$LOCAL
 
 #Folders
 KERNEL_F="linux-sunxi"
@@ -301,14 +317,14 @@ if [ "$IMAGEN_C" == "1" ] ; then
         esac
       fi
       debug "Corriendo el debootstrap"
-      LANG=C debootstrap --include="${PAQUETES_DB}" \
+      debootstrap --include="${PAQUETES_DB}" \
       --arch=armhf \
       --foreign ${DISTRO} \
       ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
 
       cp /usr/bin/qemu-arm-static \
         ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/usr/bin
-      LANG=C chroot ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} \
+      chroot ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} \
         /usr/bin/qemu-arm-static /bin/sh \
         -i /debootstrap/debootstrap --second-stage
       informa "Comprimiendo debootstrap" "${DISTRO}" "${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT}"
@@ -526,7 +542,7 @@ apt-get update -y
 apt-get upgrade -y
 EOT
   debug "Ejecutando tmp/update.sh"
-  LANG=C chroot ${PWD_F}/${TMP_F}/${MNT} \
+  chroot ${PWD_F}/${TMP_F}/${MNT} \
     /usr/bin/qemu-arm-static /bin/bash \
     /tmp/update.sh
   debug "Borrando archivo de actualizacion"
@@ -554,7 +570,7 @@ EOT
     ${PWD_F}/${TMP_F}/${MNT}
 
   debug "Ejecutando el script en jaula"
-  LANG=C chroot ${PWD_F}/${TMP_F}/${MNT} \
+  chroot ${PWD_F}/${TMP_F}/${MNT} \
     /usr/bin/qemu-arm-static /bin/bash \
     /custom.sh
   
