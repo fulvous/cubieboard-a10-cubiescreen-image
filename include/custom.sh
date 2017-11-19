@@ -109,7 +109,7 @@ chown $NEW_USER:$NEW_USER /home/$NEW_USER/.Xauthority
 ##Changing hostname
 echo "${NEGRITAS}Cambiando hostname ${AMARILLO}ciclope${FECHA}${RESET}"
 echo "${NOMBRE_HOST}${FECHA}" > /etc/hostname
-`sed -i '1s/^127\.0\.0\.1.*/127.0.0.1\tlocalhost\t${NOMBRE_HOST}${FECHA}/' /etc/hosts`
+`sed -i "1s/^127\.0\.0\.1.*/127.0.0.1\tlocalhost\t${NOMBRE_HOST}${FECHA}/" /etc/hosts`
 
 ###Xorg configuration
 #echo "Installing xorg config" 
