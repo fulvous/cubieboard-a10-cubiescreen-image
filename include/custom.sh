@@ -95,10 +95,11 @@ if [ "$( cat /etc/passwd | grep ${NEW_USER} -c )" == "1" ] ; then
   done
 fi
 
+##Tocando el archivo .Xauthority para iniciar gráficamente
+echo "${NEGRITAS}Creando archivo ${AMARILLO}.Xauthority${RESET}"
+touch /home/$NEW_USER/.Xauthority
+chown $NEW_USER:$NEW_USER /home/$NEW_USER/.Xauthority
 
-#touch /home/$NEW_USER/.Xauthority
-#chown $NEW_USER:$NEW_USER /home/$NEW_USER/.Xauthority
-#
 ###Enabling desktop environment
 #if [ -f /etc/init.d/nodm ] ; then
 #  sed -i "s/NODM_USER=\(.*\)/NODM_USER=${NEW_USER}/" /etc/default/nodm

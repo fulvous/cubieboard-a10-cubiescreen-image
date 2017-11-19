@@ -296,15 +296,22 @@ if [ "$IMAGEN_C" == "1" ] ; then
           "wheezy")
             PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop,openbox-themes,gnome-icon-theme,libgdk-pixbuf2.0-dev,pixmap,network-manager-gnome,gtk2-engines-pixbuf,ruby-gdk-pixbuf2"
             debug "Agregando lxde a paquetes: ${PAQUETES_DB}"
-            echo "[ -f /tmp/inicial.sh ] && /tmp/inicial.sh" >> /etc/rc.local
+            sleep 5
+cat <<EOT > /etc/rc.local
+##Coloca cualquier comando antes del exit 0
+[ -f /usr/local/bin/inicial.sh ] && /usr/local/bin/inicial.sh
+exit0
+EOT
         
+[ ! -d /usr/local/bin ] && mkdir -p /usr/local/bin
 
-cat <<EOT > /tmp/inicial.sh
-/usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbufuery-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
-rm /tmp/inicial.sh
+cat <<EOT > /usr/local/bin/inicial.sh
+#!/bin/bash
+/usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
+## rm /usr/local/bin/inicial.sh
 EOT
 
-            chmod 755 /tmp/inicial.sh
+chmod 755 /usr/local/bin/inicial.sh
 
 
             ;;
