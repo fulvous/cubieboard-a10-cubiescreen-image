@@ -189,6 +189,7 @@ if [ ! -d ${KERNEL_F} ] ; then
 else
   informa "Actualizando" "kernel" "${KERNEL_V}"
   cd ${KERNEL_F}
+  git stash
   git pull https://github.com/linux-sunxi/linux-sunxi.git 
   cd ${PWD_F}
 fi
@@ -298,10 +299,10 @@ if [ "$IMAGEN_C" == "1" ] ; then
             echo "[ -f /tmp/inicial.sh ] && /tmp/inicial.sh" >> /etc/rc.local
         
 
-            cat <<EOT > /tmp/inicial.sh
-            /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbufuery-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
-            rm /tmp/inicial.sh
-            EOT
+cat <<EOT > /tmp/inicial.sh
+/usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbufuery-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
+rm /tmp/inicial.sh
+EOT
 
             chmod 755 /tmp/inicial.sh
 

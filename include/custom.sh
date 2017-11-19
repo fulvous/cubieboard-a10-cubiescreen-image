@@ -44,7 +44,8 @@ MOUNT_R="mnt"
 OUTPUT_F="output"
 KERNEL_F="linux-sunxi"
 DISTRO="wheezy"
-LOCALES="es_MX.UTF8 UTF-8"
+LOCALES="es_MX.UTF-8 UTF-8"
+LOCAL="es_MX.UTF-8"
 NOMBRE_HOST="ciclope"
 
 NEW_USER="meganucleo"
@@ -76,6 +77,9 @@ cat <<EOT > /etc/locale.gen
 ${LOCALES}
 EOT
 locale-gen
+export LANG=${LOCAL}
+echo "export LANG=${LOCAL}">>/etc/skel/.bashrc
+echo "export LANG=${LOCAL}">>/root/.bashrc
 
 ##Creando usuario meganucleo
 echo "${NEGRITAS}Nuevo usuario ${AMARILLO}${NEW_USER}${RESET}"
