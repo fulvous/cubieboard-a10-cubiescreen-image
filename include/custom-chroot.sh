@@ -37,6 +37,8 @@
 
 source /colores.sh
 
+echo "${NEGRITAS}Ejecutando script ${AMARILLO}custom-chroot.sh${RESET}"
+
 PWD_F="$(pwd)"
 TMP_F="tmp"
 TMP_DEV="image.raw"
@@ -44,8 +46,10 @@ MOUNT_R="mnt"
 OUTPUT_F="output"
 KERNEL_F="linux-sunxi"
 DISTRO="wheezy"
-LOCALES="es_MX.UTF-8 UTF-8"
-LOCAL="es_MX.UTF-8"
+#LOCALES="es_MX.UTF-8 UTF-8"
+#LOCAL="es_MX.UTF-8"
+LOCALES="es_MX.UTF-8 UTF-8\nen_US.UTF-8 UTF-8"
+LOCAL="C"
 NOMBRE_HOST="ciclope"
 
 NEW_USER="meganucleo"
@@ -107,22 +111,12 @@ cat <<EOT > /home/${NEW_USER}/.dmrc
 Session=lightdm-xsession
 EOT
 
-###Enabling desktop environment
-#if [ -f /etc/init.d/nodm ] ; then
-#  sed -i "s/NODM_USER=\(.*\)/NODM_USER=${NEW_USER}/" /etc/default/nodm
-#  sed -i "s/NODM_ENABLED=\(.*\)/NODM_ENABLED=true/g" /etc/default/nodm
-#fi
-
-##Changing hostname
+##Cambiando el nombre del host
 echo "${NEGRITAS}Cambiando hostname ${AMARILLO}ciclope${FECHA}${RESET}"
 echo "${NOMBRE_HOST}${FECHA}" > /etc/hostname
 `sed -i "1s/^127\.0\.0\.1.*/127.0.0.1\tlocalhost\t${NOMBRE_HOST}${FECHA}/" /etc/hosts`
 
-###Xorg configuration
-#echo "Installing xorg config" 
-#cp /tmp/overlay/xorg.config/10-evdev.conf /usr/share/X11/xorg.conf.d/
-#cp /tmp/overlay/xorg.config/exynos.conf /usr/share/X11/xorg.conf.d/
-#
+
 ###Xinput calibrator
 #echo "Installing xinput_calibrator" 
 #cp /tmp/overlay/xorg.config/xinput_calibrator /usr/bin
@@ -328,9 +322,9 @@ EOT
 echo "${NEGRITAS}Actualizando e instalando ${AMARILLO}paquetes${RESET}"
 apt-get install -y \
   network-manager network-manager-openvpn \
-  python-psycopg2 python-pyside
+  python-psycopg2 python-pyside 
   #postgresql-9.1 postgresql-client-9.1 \
-  #postgresql-client-common postgresql-common \
+  #postgresql-client-common postgresql-common 
   #sudo vim task-lxde-desktop
   #postgresql postgresql-9.4 postgresql-client-9.4 \
   #postgresql-client-common postgresql-common \

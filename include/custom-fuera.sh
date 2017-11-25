@@ -35,31 +35,14 @@
 #along with Cubiecopiadora  If not, see 
 #<http://www.gnu.org/licenses/>.
 
-informa "Parchando" "kernel" "Cubiescreen"
+informa "Ejecutando" "custom-fuera" "fuera de la Jaula"
 
-tar xvf ${PWD_F}/sources/cubiescreen/cubiescreen_drv.tar \
-  -C ${PWD_F}/${TMP_F}
+debug "Copiando el xinput_calibrator"
+cp -v ${PWD_F}/${TMP_F}/cubiescreen/sdk_configure/xinput_calibrator \
+  ${PWD_F}/${TMP_F}/${MNT_F}/usr/bin
 
-cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/touchscreen/* \
-  ${PWD_F}/${KERNEL_F}/drivers/input/touchscreen/
-cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/video/disp/* \
-  ${PWD_F}/${KERNEL_F}/drivers/video/sunxi/disp/
-cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/video/lcd/* \
-  ${PWD_F}/${KERNEL_F}/drivers/video/sunxi/lcd/
-cp -v ${PWD_F}/${TMP_F}/cubiescreen/driver/ctp.h \
-  ${PWD_F}/${KERNEL_F}/include/linux/
+cp -v ${PWD_F}/${TMP_F}/cubiescreen/sdk_configure/xinput_calibrator.1.gz \
+  ${PWD_F}/${TMP_F}/${MNT_F}/usr/share/man/man1
 
-patch ${PWD_F}/${KERNEL_F}/.config  \
-  ${PWD_F}/sources/kernel/config.patch
-patch ${PWD_F}/${KERNEL_F}/drivers/i2c/busses/i2c-sunxi.c \
-  ${PWD_F}/sources/kernel/i2c-sunxi.c.patch
-
-##Parchando driver ft5x_ts
-#patch ${PWD_F}/${KERNEL_F}/drivers/input/touchscreen/ft5x_ts.c  \
-#  ${PWD_F}/sources/kernel/ft5x_ts.c.patch
-#
-##Parchando driver auo_pixcir_ts
-#patch ${PWD_F}/${KERNEL_F}/drivers/input/touchscreen/auo-pixcir-ts.c  \
-#  ${PWD_F}/sources/kernel/auo-pixcir-ts.c.patch
 
 res_ok "Parches y drivers para" "cubiescreen" "Exitoso"

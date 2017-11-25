@@ -1,0 +1,34 @@
+34a35
+> #include <linux/moduleparam.h>
+39a41
+> #include <linux/stat.h>
+151a154,171
+> static short interrupt_settings = 0x08;
+> static short interrupt_width    = 100;
+> static short sensitivity_x      = 100;
+> static short sensitivity_y      = 100;
+> 
+> module_param(interrupt_settings, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+> MODULE_PARM_DESC(interrupt_settings, "Interrupt settings can be: 0x08, 0x09, 0x0a");
+> 
+> module_param(interrupt_width, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+> MODULE_PARM_DESC(interrupt_width, "Pulse with of the interrupt");
+> 
+> module_param(sensitivity_x, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+> MODULE_PARM_DESC(sensitivity_x, "Sensitivity of the touchscreen in the x-axis");
+> 
+> module_param(sensitivity_y, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+> MODULE_PARM_DESC(sensitivity_y, "Sensitivity of the touchscreen in the y-axis");
+> 
+> 
+1759a1780,1784
+>   ft5x_set_reg(0x6e, interrupt_settings); // int enable,low,indicate mode
+>   ft5x_set_reg(0x6f, interrupt_width);//int enable,low,indicate mode
+>   ft5x_set_reg(0x67, sensitivity_x); //set x sensitivity
+>   ft5x_set_reg(0x68, sensitivity_y); //set y sensitivity
+> 
+1765c1790,1791
+< 	err = request_irq(SW_INT_IRQNO_PIO, ft5x_ts_interrupt, IRQF_TRIGGER_FALLING | IRQF_SHARED, "ft5x_ts", ft5x_ts);
+---
+>   err = request_irq(SW_INT_IRQNO_PIO, ft5x_ts_interrupt, IRQF_SHARED, "ft5x_ts", ft5x_ts);
+> 

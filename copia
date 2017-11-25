@@ -55,11 +55,16 @@ LOG="${PWD_F}/cubiecopiadora.log"
 
 
 #Locales
-LOCAL="es_MX.UTF-8"
-LENGUAJE="es_MX:es"
+#LOCAL="es_MX.UTF-8"
+#LOCALES="es_MX.UTF-8 UTF-8"
+#LENGUAJE="es_MX:es"
+LOCAL="C"
+LOCALES="es_MX.UTF-8 UTF-8\nes_US.UTF-8 UTF-8"
+LENGUAJE="en_US:en"
 export LANG=$LOCAL
 export LANGUAGE=$LENGUAJE
 export LC_CTYPE=$LOCAL
+export LC_TYPE=$LOCAL
 export LC_NUMERIC=$LOCAL
 export LC_TIME=$LOCAL
 export LC_COLLATE=$LOCAL
@@ -205,7 +210,7 @@ if [ ! -d ${KERNEL_F} ] ; then
 else
   informa "Actualizando" "kernel" "${KERNEL_V}"
   cd ${KERNEL_F}
-  git stash
+  git reset --hard
   git pull https://github.com/linux-sunxi/linux-sunxi.git 
   cd ${PWD_F}
 fi
@@ -305,6 +310,22 @@ if [ "$IMAGEN_C" == "1" ] ; then
         rm -Rf ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
       debug "Creando el directorio ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}"
       mkdir ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+
+      ##Colocando los locales
+      debug "Colocando los locales en debootstrap"
+      mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/etc/default
+cat <<EOT > ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/etc/locale.gen
+${LOCALES}
+EOT
+
+cat <<EOT > ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/etc/default/locale
+LANG=${LOCAL}
+LC_TYPE=${LOCAL}
+LC_MESSAGES=${LOCAL}
+LC_ALL=${LOCAL}
+LANGUAGE=${LENGUAJE}
+EOT
+
       informa "Descargando" "paquetes" "${DISTRO}"
 
       if [ "${DEBOOTSTRAP_G}" == "1" ] ; then
@@ -466,72 +487,6 @@ EOT
   mount -o bind /dev/pts ${PWD_F}/${TMP_F}/${MNT}/dev/pts
   res_ok "Carpetas montadas" "proc dev dev/pts sys" "Exitoso"
 
-  ##Colocando script de arranque
-cat <<EOT > /etc/rc.local
-##Coloca cualquier comando antes del exit 0
-[ -f /usr/local/bin/inicial.sh ] && /usr/local/bin/inicial.sh
-exit0
-EOT
-
-  [ ! -d /usr/local/bin ] && mkdir -p /usr/local/bin
-  touch /usr/local/bin/primera
- 
-cat <<EOT > /usr/local/bin/inicial.sh
-#!/bin/bash
-
-if [ -f /usr/local/bin/primera ] ; then
-        echo ",+" | sfdisk -N 2 /dev/mmcblk0 --force --no-reread
-        rm /usr/local/bin/primera
-        touch /usr/local/bin/segunda
-        reboot
-else 
-        if [ -f /usr/local/bin/segunda ] ; then 
-                rm /usr/local/bin/segunda
-                resize2fs /dev/mmcblk0p2
-        fi
-fi
-
-## rm /usr/local/bin/inicial.sh
-EOT
-
-  ##Dar permiso de ejecución a primer arranque
-  chmod 755 /usr/local/bin/inicial.sh
-
-
-
-  ##Procesos adicionales después de montado si es gráfico
-  if [ "${DEBOOTSTRAP_G}" ==  "1" ] ; then
-
-    case ${DISTRO} in
-       "wheezy")
-       
-cat <<EOT > /usr/local/bin/inicial.sh
-#!/bin/bash
-
-if [ -f /usr/local/bin/primera ] ; then
-        /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
-        echo ",+" | sfdisk -N 2 /dev/mmcblk0 --force --no-reread
-        rm /usr/local/bin/primera
-        touch /usr/local/bin/segunda
-        reboot
-else 
-        if [ -f /usr/local/bin/segunda ] ; then 
-                rm /usr/local/bin/segunda
-                resize2fs /dev/mmcblk0p2
-        fi
-fi
-
-## rm /usr/local/bin/inicial.sh
-EOT
-
-        ##Dar permiso de ejecución a primer arranque
-        chmod 755 /usr/local/bin/inicial.sh
-
-        ;;
-    esac
-
-  fi
-
 
   #Actualizar paquetes
   informa "Actualizando" "paquetes"
@@ -561,21 +516,94 @@ EOT
   informa "Habilitar" "terminal serial"
   echo "T0:2345:respawn:/sbin/getty -L ttyS0 115200 vt100" >> ${PWD_F}/${TMP_F}/${MNT}/etc/inittab
 
-  #Ejecutando los scripts custom
-  informa "Ejecutando" "include/custom.sh"
+
+  ##Colocando script de arranque
+cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/rc.local
+##Coloca cualquier comando antes del exit 0
+[ -f /usr/local/bin/inicial.sh ] && /usr/local/bin/inicial.sh
+exit0
+EOT
+
+  [ ! -d ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin ] && mkdir -p ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin
+  touch ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/primera
+ 
+cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
+#!/bin/bash
+
+if [ -f /usr/local/bin/primera ] ; then
+        echo ",+" | sfdisk -N 2 /dev/mmcblk0 --force --no-reread
+        rm /usr/local/bin/primera
+        touch /usr/local/bin/segunda
+        reboot
+else 
+        if [ -f /usr/local/bin/segunda ] ; then 
+                rm /usr/local/bin/segunda
+                resize2fs /dev/mmcblk0p2
+        fi
+fi
+
+## rm /usr/local/bin/inicial.sh
+EOT
+
+  ##Dar permiso de ejecución a primer arranque
+  chmod 755 ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
+
+
+
+  ##Procesos adicionales después de montado si es gráfico
+  if [ "${DEBOOTSTRAP_G}" ==  "1" ] ; then
+
+    case ${DISTRO} in
+       "wheezy")
+       
+cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
+#!/bin/bash
+
+if [ -f /usr/local/bin/primera ] ; then
+        /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
+        echo ",+" | sfdisk -N 2 /dev/mmcblk0 --force --no-reread
+        rm /usr/local/bin/primera
+        touch /usr/local/bin/segunda
+        reboot
+else 
+        if [ -f /usr/local/bin/segunda ] ; then 
+                rm /usr/local/bin/segunda
+                resize2fs /dev/mmcblk0p2
+        fi
+fi
+
+## rm /usr/local/bin/inicial.sh
+EOT
+
+        ##Dar permiso de ejecución a primer arranque
+        chmod 755 ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
+
+        ;;
+    esac
+
+  fi
+
+
+  #Ejecutando los scripts custom-fuera
+  informa "Ejecutando" "include/custom-fuera.sh"
+  source ${PWD_F}/include/custom-fuera.sh
+
+
+  #Ejecutando los scripts custom-chroot
+  informa "Ejecutando" "include/custom-chroot.sh"
   debug "Copiando los scripts a la imagen"
   cp -v ${PWD_F}/herramientax/formato/colores.sh \
     ${PWD_F}/${TMP_F}/${MNT}
-  cp -v ${PWD_F}/include/custom.sh \
+  cp -v ${PWD_F}/include/custom-chroot.sh \
     ${PWD_F}/${TMP_F}/${MNT}
 
   debug "Ejecutando el script en jaula"
   chroot ${PWD_F}/${TMP_F}/${MNT} \
     /usr/bin/qemu-arm-static /bin/bash \
-    /custom.sh
+    /custom-chroot.sh
   
   debug "Borrando los scripts de la imagen"
-  rm ${PWD_F}/${TMP_F}/${MNT}/custom.sh
+  rm ${PWD_F}/${TMP_F}/${MNT}/custom-chroot.sh
   rm ${PWD_F}/${TMP_F}/${MNT}/colores.sh
   
   res_ok "Script" "include/custom.sh" "Exitoso"

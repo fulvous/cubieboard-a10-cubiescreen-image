@@ -253,9 +253,9 @@ rtp_sensitive_level = 0xf
 rtp_exchange_x_y_flag = 0
 
 [ctp_para]
-ctp_used = 0
-ctp_name = "ft5x_ts"
-ctp_twi_id = 2
+ctp_used = 1
+ctp_name = "auo-pixcir-ts"
+ctp_twi_id = 0
 ctp_twi_addr = 0x5c
 ctp_screen_max_x = 800
 ctp_screen_max_y = 480
