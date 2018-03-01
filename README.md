@@ -18,4 +18,7 @@ Scripts for creating a new cubieboard a10 cubiescreen image for debian desktop
 + Usar cubiecopiadora
 
   cd cubiecopiadora
+  
+  ./instala
+  
   ./cubiecopiadora -h
