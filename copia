@@ -90,7 +90,7 @@ FOLDERS="${KERNEL_F} ${UBOOT_F} ${SALIDA_F} ${TMP_F} ${DEBOOTSTRAP_F}"
 #Valores para compilacion
 TARJETA="Cubieboard"
 CONFIG_TARJETA="sun4i_defconfig"
-KERNEL_V="3.4.79"
+KERNEL_V="3.4"
 UBOOT_V="sunxi"
 
 #Valores para la imagen
