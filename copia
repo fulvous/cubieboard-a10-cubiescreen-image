@@ -80,6 +80,7 @@ export LC_ALL=$LOCAL
 
 #Folders
 KERNEL_F="linux-sunxi"
+SUNXITOOLS_F="sunxi-tools"
 UBOOT_F="u-boot-sunxi"
 SALIDA_F="salida"
 TMP_F="tmp"
@@ -172,7 +173,7 @@ informa "Instalando" "Paquetes" "necesarios"
 apt-get install -y \
   qemu binfmt-support qemu-user-static \
   gcc-arm-linux-gnueabihf pigz debootstrap \
-  kpartx
+  kpartx make gcc libusb-1.0-0-dev
 res_ok "Paquetes" "instalados" "Exitoso"
 
 #Borrar carpetas
@@ -189,6 +190,19 @@ if [ "${BORRAR}" == "1" ] ; then
   UBOOT_C=1
   KERNEL_C=1
 fi
+
+#Descargando sunxi-tools
+if [ ! -d ${SUNXITOOLS_F} ] ; then
+  informa "Descargando" "sunxi-tools" 
+  git clone https://github.com/linux-sunxi/sunxi-tools ${SUNXITOOLS_F}
+  res_ok "Descarga" "sunxi-tools" "Exitoso"
+else
+  informa "Actualizando" "sunxi-tools" 
+  cd ${SUNXITOOLS_F}
+  git pull
+  cd ${PWD_F}
+fi
+
 
 #Descargando u-boot
 if [ ! -d ${UBOOT_F} ] ; then
@@ -224,6 +238,16 @@ for folder in "${OUTPUT_F} ${TMP_f}"; do
 done
 rm -Rfv ${PWD_F}/${TMP_F}/*
 res_ok "Folders existentes" "${OUTPUT_F} ${TMP_F}" "Exitoso"
+
+#Compilando sunxi-tools
+if [ ! -f ${PWD_F}/${SUNXITOOLS_F}/fex2bin ] ; then
+  informa "Compilando" "sunxi-tools"
+  debug "Compilando sunxi-tools"
+  cd ${PWD_F}/${SUNXITOOLS_F}
+  make && make install
+  cd ${PWD_F}
+  informa "Sunxi-tools" "instalados"
+fi
 
 #Compilando u-boot
 if [ "${UBOOT_C}" == "1" ] ; then
