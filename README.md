@@ -3,7 +3,7 @@ Scripts for creating a new cubieboard a10 cubiescreen image for debian desktop
 
 ===
 
-#Instalacion
+# Instalacion
 
 
 + Usar ubuntu 14 LTS como sistema
@@ -14,3 +14,8 @@ Scripts for creating a new cubieboard a10 cubiescreen image for debian desktop
 + Descargar cubiecopiadora
 
   git clone https://github.com/fulvous/cubiecopiadora.git
+    
++ Usar cubiecopiadora
+
+  cd cubiecopiadora
+  ./cubiecopiadora -h
