@@ -37,12 +37,12 @@
 
 informa "Ejecutando" "custom-fuera" "fuera de la Jaula"
 
-debug "Copiando el xinput_calibrator"
-cp -v ${PWD_F}/${TMP_F}/cubiescreen/sdk_configure/xinput_calibrator \
-  ${PWD_F}/${TMP_F}/${MNT}/usr/bin
+#debug "Copiando el xinput_calibrator"
+#cp -v ${PWD_F}/${TMP_F}/cubiescreen/sdk_configure/xinput_calibrator \
+#  ${PWD_F}/${TMP_F}/${MNT}/usr/bin
+#
+#cp -v ${PWD_F}/${TMP_F}/cubiescreen/sdk_configure/xinput_calibrator.1.gz \
+#  ${PWD_F}/${TMP_F}/${MNT}/usr/share/man/man1
 
-cp -v ${PWD_F}/${TMP_F}/cubiescreen/sdk_configure/xinput_calibrator.1.gz \
-  ${PWD_F}/${TMP_F}/${MNT}/usr/share/man/man1
 
-
-res_ok "Parches y drivers para" "cubiescreen" "Exitoso"
+res_ok "Custom fuera" "Ejecutado" "Exitoso"
