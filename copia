@@ -174,7 +174,7 @@ apt-get install -y \
   qemu binfmt-support qemu-user-static \
   gcc-arm-linux-gnueabihf pigz debootstrap \
   kpartx make gcc libusb-1.0-0-dev \
-  pkg-config libz-dev
+  pkg-config libz-dev u-boot-tools
 res_ok "Paquetes" "instalados" "Exitoso"
 
 #Borrar carpetas
