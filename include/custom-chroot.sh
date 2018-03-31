@@ -134,7 +134,7 @@ echo "${NOMBRE_HOST}${FECHA}" > /etc/hostname
 ##Cargar modulo ft5x_ts al inicio
 echo "${NEGRITAS}Agregar a modules ${AMARILLO}ft5x_ts, mali, sunxi-emac${RESET}"
 cat <<EOT > /etc/modules
-ft5x_ts
+#ft5x_ts
 mali
 gpio_sunxi
 sunxi-emac
@@ -142,11 +142,11 @@ EOT
 
 ##Quitar la informacion del sistema
 echo "${NEGRITAS}Quitando informacion de sistema ${RESET}"
-echo "Meganucleo CICLOPE" > /etc/issue
-echo "Meganucleo CICLOPE" > /etc/issue.net
+echo "Meganucleo PANTALLA" > /etc/issue
+echo "Meganucleo PANTALLA" > /etc/issue.net
 echo "${NEGRITAS}Cambiando motd ${RESET}"
 #rm /etc/update-motd.d/*
-echo "Bienvenido a meganucleo CICLOPE ${FECHA}" > /etc/motd
+echo "Bienvenido a meganucleo PANTALLA ${FECHA}" > /etc/motd
 echo " " >> /etc/motd
 
 #Cambiando el prompt
@@ -160,53 +160,53 @@ PS1="$CYAN\u$RESET@$VERDE\h$RESET|$AMARILLO\W$RESET\n> "
 EOT
 
 #Cambiando el archivo de evdev en xorg.d
-cat <<EOT >/usr/share/X11/xorg.conf.d/10-evdev.conf
+#cat <<EOT >/usr/share/X11/xorg.conf.d/10-evdev.conf
+##
+## Catch-all evdev loader for udev-based systems
+## We don't simply match on any device since that also adds accelerometers
+## and other devices that we don't really want to use. The list below
+## matches everything but joysticks.
 #
-# Catch-all evdev loader for udev-based systems
-# We don't simply match on any device since that also adds accelerometers
-# and other devices that we don't really want to use. The list below
-# matches everything but joysticks.
-
-Section "InputClass"
-        Identifier "evdev pointer catchall"
-        MatchIsPointer "on"
-        MatchDevicePath "/dev/input/event*"
-        Driver "evdev"
-EndSection
-
-Section "InputClass"
-        Identifier "evdev keyboard catchall"
-        MatchIsKeyboard "on"
-        MatchDevicePath "/dev/input/event*"
-        Driver "evdev"
-EndSection
-
-Section "InputClass"
-        Identifier "evdev touchpad catchall"
-        MatchIsTouchpad "on"
-        MatchDevicePath "/dev/input/event*"
-        Driver "evdev"
-EndSection
-
-Section "InputClass"
-        Identifier "evdev tablet catchall"
-        MatchIsTablet "on"
-        MatchDevicePath "/dev/input/event*"
-        Driver "evdev"
-EndSection
-
-Section "InputClass"
-       Identifier "evdev touchscreen catchall"
-       MatchIsTouchscreen "on"
-       MatchDevicePath "/dev/input/event*"
-       Driver "evdev"
-       MatchProduct "ft5x_ts"
-       #Option "Calibration" "14 807 18 490"
-       #Option "Calibration" "8 404 2 252"
-       #Option "Calibration" "0 800 0 480"
-       Option "Mode" "Absolute"
-EndSection
-EOT
+#Section "InputClass"
+#        Identifier "evdev pointer catchall"
+#        MatchIsPointer "on"
+#        MatchDevicePath "/dev/input/event*"
+#        Driver "evdev"
+#EndSection
+#
+#Section "InputClass"
+#        Identifier "evdev keyboard catchall"
+#        MatchIsKeyboard "on"
+#        MatchDevicePath "/dev/input/event*"
+#        Driver "evdev"
+#EndSection
+#
+#Section "InputClass"
+#        Identifier "evdev touchpad catchall"
+#        MatchIsTouchpad "on"
+#        MatchDevicePath "/dev/input/event*"
+#        Driver "evdev"
+#EndSection
+#
+#Section "InputClass"
+#        Identifier "evdev tablet catchall"
+#        MatchIsTablet "on"
+#        MatchDevicePath "/dev/input/event*"
+#        Driver "evdev"
+#EndSection
+#
+#Section "InputClass"
+#       Identifier "evdev touchscreen catchall"
+#       MatchIsTouchscreen "on"
+#       MatchDevicePath "/dev/input/event*"
+#       Driver "evdev"
+#       MatchProduct "ft5x_ts"
+#       #Option "Calibration" "14 807 18 490"
+#       #Option "Calibration" "8 404 2 252"
+#       #Option "Calibration" "0 800 0 480"
+#       Option "Mode" "Absolute"
+#EndSection
+#EOT
 
 #Agregando configuración de aceleración a Xorg
 cat <<EOT >/usr/share/X11/xorg.conf.d/exynos.conf
@@ -235,8 +235,8 @@ EOT
 echo "${NEGRITAS}Auto-arrancand usuario ${AMARILLO}${NEW_USER}${RESET}"
 cat <<EOT > /etc/lightdm/lightdm.conf
 [SeatDefaults]
-autologin-user=meganucleo
-autologin-user-timeout=0
+#autologin-user=meganucleo
+#autologin-user-timeout=0
 greeter-session=lightdm-greeter
 user-session=lxsession
 xserver-allow-tcp=false
@@ -322,7 +322,8 @@ EOT
 echo "${NEGRITAS}Actualizando e instalando ${AMARILLO}paquetes${RESET}"
 apt-get install -y \
   network-manager network-manager-openvpn \
-  python-psycopg2 python-pyside 
+  sudo vim task-lxde-desktop
+  #python-psycopg2 python-pyside 
   #postgresql-9.1 postgresql-client-9.1 \
   #postgresql-client-common postgresql-common 
   #sudo vim task-lxde-desktop
