@@ -47,6 +47,7 @@ VERBOSE=0
 BORRAR=0
 UBOOT_C=1
 KERNEL_C=1
+KERNEL_M=0
 KERNEL_P=1
 IMAGEN_C=1
 DEBOOTSTRAP_C=1
@@ -118,6 +119,7 @@ function uso {
   "  -g          Hacer imagen grafica." \
   "  -i          NO crear imagen SD." \
   "  -k          NO compiles kernel." \
+  "  -m          Ejecuta kernel menu." \
   "  -p          NO ejecutes ${CYAN}include/patch.sh${RESET}." \
   "  -u          NO compiles u-boot." \
   "  -r          Borra todos los directorios." \
@@ -136,6 +138,9 @@ while getopts gkpurvh OPT ; do
       ;;
     k)
       KERNEL_C=0
+      ;;
+    m)
+      KERNEL_M=1
       ;;
     p)
       KERNEL_P=0
@@ -276,6 +281,13 @@ if [ "${KERNEL_C}" == "1" ] ; then
   make -j$(nproc) ARCH=arm \
   CROSS_COMPILE=arm-linux-gnueabihf- \
   ${CONFIG_TARJETA}
+
+  if [ "${KERNEL_M}" == "1" ] ; then
+    make -j$(nproc) ARCH=arm \
+    CROSS_COMPILE=arm-linux-gnueabihf- \
+    menuconfig
+  fi
+  
 
   if [ "${KERNEL_P}" == "1" ] ; then
     informa "Ejecutando" "kernel" "patch.sh"
