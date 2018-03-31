@@ -127,7 +127,7 @@ function uso {
   "  -h          Imprime esta ayuda." 
 }
 
-while getopts gkpurvh OPT ; do
+while getopts gkmpurvh OPT ; do
   case $OPT in
     g)
       DEBOOTSTRAP_G=1
