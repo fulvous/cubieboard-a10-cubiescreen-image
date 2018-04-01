@@ -109,7 +109,7 @@ case ${DISTRO} in
     PAQUETES_DB="${PAQUETES_DB},wpasupplicant,wireless-tools,i2c-tools"
     ;;
   xenial)
-    PAQUETES_DB="${PAQUETES_DB},wpasupplicant,wireless-tools,i2c-tools"
+    PAQUETES_DB="${PAQUETES_DB},wpasupplicant,wireless-tools,i2c-tools,python3"
     ;;
 esac
 
@@ -175,6 +175,22 @@ if [ -f ${PWD_F}/include/configs.sh ] ; then
   source ${PWD_F}/include/configs.sh
   res_ok "Cargadas configuraciones" "${PWD_F}/include/configs.sh" "Exitoso"
 fi
+
+#Trap de salida
+function salir {
+  #Desmontando systemas de archivos
+  sleep 3
+  debug "Desmontando sistemas virtuales"
+  umount ${PWD_F}/${TMP_F}/${MNT}/dev/pts
+  for i in proc dev sys; do
+    umount ${PWD_F}/${TMP_F}/${MNT}/$i
+  done
+  sleep 3
+  umount /dev/mapper/${parts[1]}
+
+}
+trap salir EXIT
+
 
 #Instalando paquetes necesarios
 informa "Instalando" "Paquetes" "necesarios"
@@ -505,31 +521,18 @@ EOT
     #Creando sources.list
     informa "Agregando" "sources.list"
 cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/apt/sources.list
-deb http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO} main restricted
-deb-src http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO} main restricted
-
-deb http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO}-updates main restricted
-deb-src http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO}-updates main restricted
-
-deb http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO} universe
-deb-src http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO} universe
-deb http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO}-updates universe
-deb-src http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO}-updates universe
-
-deb http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO} multiverse
-deb-src http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO} multiverse
-deb http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO}-updates multiverse
-deb-src http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO}-updates multiverse
-
-deb http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO}-backports main restricted universe multiverse
-deb-src http://mx.archive.ubuntu.com/ubuntu/ ${DISTRO}-backports main restricted universe multiverse
-
-deb http://security.ubuntu.com/ubuntu ${DISTRO}-security main restricted
-deb-src http://security.ubuntu.com/ubuntu ${DISTRO}-security main restricted
-deb http://security.ubuntu.com/ubuntu ${DISTRO}-security universe
-deb-src http://security.ubuntu.com/ubuntu ${DISTRO}-security universe
-deb http://security.ubuntu.com/ubuntu ${DISTRO}-security multiverse
-deb-src http://security.ubuntu.com/ubuntu ${DISTRO}-security multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO} main restricted multiverse
+deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO} main restricted multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-updates main restricted multiverse
+deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-updates main restricted multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO} universe
+deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO} universe
+deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-updates universe
+deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-updates universe
+deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-security main restricted multiverse
+deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-security main restricted multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-security universe
+deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-security universe
 EOT
   res_ok "Archivo" "Sources.list" "Exitoso"
     ;;
@@ -576,6 +579,7 @@ EOT
   debug "Creando tmp/update.sh"
 cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/tmp/update.sh
 #!/bin/bash
+apt-get install -f
 apt-get update -y
 apt-get upgrade -y
 EOT
