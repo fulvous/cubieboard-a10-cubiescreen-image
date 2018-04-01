@@ -96,7 +96,7 @@ KERNEL_V="3.4"
 UBOOT_V="sunxi"
 
 #Valores para la imagen
-DISTRO="wheezy"
+DISTRO="xenial"
 MNT="mnt"
 IMAGEN="${TARJETA}-${KERNEL_V}-$(date +%Y%m%d).img"
 
@@ -106,6 +106,9 @@ PAQUETES_DB="sudo,vim"
 
 case ${DISTRO} in
   wheezy)
+    PAQUETES_DB="${PAQUETES_DB},wpasupplicant,wireless-tools,i2c-tools"
+    ;;
+  xenial)
     PAQUETES_DB="${PAQUETES_DB},wpasupplicant,wireless-tools,i2c-tools"
     ;;
 esac
@@ -179,7 +182,9 @@ apt-get install -y \
   qemu binfmt-support qemu-user-static \
   gcc-arm-linux-gnueabihf pigz debootstrap \
   kpartx make gcc libusb-1.0-0-dev \
-  pkg-config libz-dev u-boot-tools
+  pkg-config libz-dev u-boot-tools \
+  libncurses-dev
+  
 res_ok "Paquetes" "instalados" "Exitoso"
 
 #Borrar carpetas
@@ -371,6 +376,10 @@ EOT
             PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop,openbox-themes,gnome-icon-theme,libgdk-pixbuf2.0-dev,pixmap,network-manager-gnome,gtk2-engines-pixbuf,ruby-gdk-pixbuf2"
             debug "Agregando lxde a paquetes: ${PAQUETES_DB}"
 
+            ;;
+          "xenial")
+            PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop,openbox-themes,gnome-icon-theme,libgdk-pixbuf2.0-dev,pixmap,network-manager-gnome,gtk2-engines-pixbuf,ruby-gdk-pixbuf2"
+            debug "Agregando lxde a paquetes: ${PAQUETES_DB}"
             ;;
         esac
       fi
@@ -616,6 +625,32 @@ EOT
         chmod 755 ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
 
         ;;
+       "xenial")
+       
+cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
+#!/bin/bash
+
+if [ -f /usr/local/bin/primera ] ; then
+        /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
+        echo ",+" | sfdisk -N 2 /dev/mmcblk0 --force --no-reread
+        rm /usr/local/bin/primera
+        touch /usr/local/bin/segunda
+        reboot
+else 
+        if [ -f /usr/local/bin/segunda ] ; then 
+                rm /usr/local/bin/segunda
+                resize2fs /dev/mmcblk0p2
+        fi
+fi
+
+## rm /usr/local/bin/inicial.sh
+EOT
+
+        ##Dar permiso de ejecución a primer arranque
+        chmod 755 ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
+
+        ;;
+
     esac
 
   fi

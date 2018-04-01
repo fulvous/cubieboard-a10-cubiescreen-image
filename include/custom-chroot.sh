@@ -45,7 +45,7 @@ TMP_DEV="image.raw"
 MOUNT_R="mnt"
 OUTPUT_F="output"
 KERNEL_F="linux-sunxi"
-DISTRO="wheezy"
+DISTRO="xenial"
 #LOCALES="es_MX.UTF-8 UTF-8"
 #LOCAL="es_MX.UTF-8"
 LOCALES="es_MX.UTF-8 UTF-8\nen_US.UTF-8 UTF-8"
@@ -84,6 +84,18 @@ locale-gen
 export LANG=${LOCAL}
 echo "export LANG=${LOCAL}">>/etc/skel/.bashrc
 echo "export LANG=${LOCAL}">>/root/.bashrc
+
+#Cambiando el prompt a todos los usuarios
+cat <<EOT >>/etc/skel/.bashrc
+
+VERDE='\[`tput setaf 2`\]'  #   2 Green
+AMARILLO='\[`tput setaf 3`\]'  #  3 Yellow
+CYAN='\[`tput setaf 6`\]'  #  6 Cyan
+RESET='\[`tput sgr0`\]'
+PS1="$CYAN\u$RESET@$VERDE\h$RESET|$AMARILLO\W$RESET\n> "
+EOT
+
+
 
 ##Creando usuario meganucleo
 echo "${NEGRITAS}Nuevo usuario ${AMARILLO}${NEW_USER}${RESET}"
@@ -148,16 +160,6 @@ echo "${NEGRITAS}Cambiando motd ${RESET}"
 #rm /etc/update-motd.d/*
 echo "Bienvenido a meganucleo PANTALLA ${FECHA}" > /etc/motd
 echo " " >> /etc/motd
-
-#Cambiando el prompt
-cat <<EOT >>/home/${NEW_USER}/.bashrc
-
-VERDE='\[`tput setaf 2`\]'  #   2 Green
-AMARILLO='\[`tput setaf 3`\]'  #  3 Yellow
-CYAN='\[`tput setaf 6`\]'  #  6 Cyan
-RESET='\[`tput sgr0`\]'
-PS1="$CYAN\u$RESET@$VERDE\h$RESET|$AMARILLO\W$RESET\n> "
-EOT
 
 #Cambiando el archivo de evdev en xorg.d
 #cat <<EOT >/usr/share/X11/xorg.conf.d/10-evdev.conf
