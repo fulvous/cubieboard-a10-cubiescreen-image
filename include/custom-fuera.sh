@@ -44,5 +44,10 @@ informa "Ejecutando" "custom-fuera" "fuera de la Jaula"
 #cp -v ${PWD_F}/${TMP_F}/cubiescreen/sdk_configure/xinput_calibrator.1.gz \
 #  ${PWD_F}/${TMP_F}/${MNT}/usr/share/man/man1
 
+debug "Copiando el árbol del kernel fuente para compilar futuros drivers"
+
+cp -v ${PWD_F}/${KERNEL_F} \
+  ${PWD_F}/${TMP_F}/${MNT}/usr/src/linux
+
 
 res_ok "Custom fuera" "Ejecutado" "Exitoso"
