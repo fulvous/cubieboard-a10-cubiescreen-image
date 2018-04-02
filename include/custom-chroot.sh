@@ -65,9 +65,9 @@ FECHA="$(date +%Y%m%d)"
 echo "${NEGRITAS}Cambiando password de ${AMARILLO}root${RESET}"
 echo root:meganucleo|chpasswd
 
-##Borrando iconos de escritorio
-echo "${NEGRITAS}Borrando iconos en ${AMARILLO}escritorio${RESET}"
-rm -f /etc/skel/Desktop/*.desktop
+###Borrando iconos de escritorio
+#echo "${NEGRITAS}Borrando iconos en ${AMARILLO}escritorio${RESET}"
+#rm -f /etc/skel/Desktop/*.desktop
 
 
 ##Installing postgresql and python tools
@@ -93,6 +93,7 @@ AMARILLO='\[`tput setaf 3`\]'  #  3 Yellow
 CYAN='\[`tput setaf 6`\]'  #  6 Cyan
 RESET='\[`tput sgr0`\]'
 PS1="$CYAN\u$RESET@$VERDE\h$RESET|$AMARILLO\W$RESET\n> "
+export LANG=${LOCAL}
 EOT
 
 
@@ -116,12 +117,19 @@ echo "${NEGRITAS}Creando archivo ${AMARILLO}.Xauthority${RESET}"
 touch /home/$NEW_USER/.Xauthority
 chown $NEW_USER:$NEW_USER /home/$NEW_USER/.Xauthority
 
+
+case ${DISTRO} in
+  "wheezy")
 ##Forzando arranque directo a X
 echo "${NEGRITAS}Forzando arranque directo a ${AMARILLO}X${RESET}"
 cat <<EOT > /home/${NEW_USER}/.dmrc
 [Desktop]
 Session=lightdm-xsession
 EOT
+  ;;
+  "xenial")
+  ;;
+esac
 
 ##Cambiando el nombre del host
 echo "${NEGRITAS}Cambiando hostname ${AMARILLO}ciclope${FECHA}${RESET}"
@@ -143,10 +151,9 @@ echo "${NOMBRE_HOST}${FECHA}" > /etc/hostname
 #chown -R $NEW_USER $WALLPAPER_CONFIG_FOLDER/$wALLPAPER_CONFIG
 
 
-##Cargar modulo ft5x_ts al inicio
-echo "${NEGRITAS}Agregar a modules ${AMARILLO}ft5x_ts, mali, sunxi-emac${RESET}"
+##Cargar modulos
+echo "${NEGRITAS}Agregar a modules ${AMARILLO}mali, sunxi-emac${RESET}"
 cat <<EOT > /etc/modules
-#ft5x_ts
 mali
 gpio_sunxi
 sunxi-emac
@@ -210,6 +217,8 @@ echo " " >> /etc/motd
 #EndSection
 #EOT
 
+case ${DISTRO} in
+  "wheezy")
 #Agregando configuración de aceleración a Xorg
 cat <<EOT >/usr/share/X11/xorg.conf.d/exynos.conf
 Section "Device"
@@ -254,6 +263,10 @@ cat <<EOT > /etc/xdg/lxsession/LXDE/autostart
 @xset -dpms
 @xset s noblank
 EOT
+  ;;
+  "xenial")
+  ;;
+esac
 
 ###Evitar que arranquen servicios
 #echo "Removing services from starting"
