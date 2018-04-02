@@ -53,6 +53,7 @@ IMAGEN_C=1
 DEBOOTSTRAP_C=1
 DEBOOTSTRAP_G=0
 LOG="${PWD_F}/cubiecopiadora.log"
+SIZE_G="3"
 
 
 #Locales
@@ -126,11 +127,12 @@ function uso {
   "  -p          NO ejecutes ${CYAN}include/patch.sh${RESET}." \
   "  -u          NO compiles u-boot." \
   "  -r          Borra todos los directorios." \
+  "  -s 8        Cambia tamaño de imagen (GB)" \
   "  -v          Muestra informacion adicional." \
   "  -h          Imprime esta ayuda." 
 }
 
-while getopts gkmpurvh OPT ; do
+while getopts ":s:gkmpurvh" OPT ; do
   case $OPT in
     g)
       DEBOOTSTRAP_G=1
@@ -150,6 +152,14 @@ while getopts gkmpurvh OPT ; do
       ;;
     u)
       UBOOT_C=0
+      ;;
+    s)
+      SIZE_G=${OPTARG}
+      if [ -z "${SIZE_G}" ]; then
+        res_err "Opcion invalida" "$OPTARG" "ERROR"
+        uso
+        exit 1
+      fi
       ;;
     r)
       BORRAR=1
@@ -426,7 +436,7 @@ EOT
   informa "Creando" "archivo" "temporal"
   dd if=/dev/zero \
     of=${PWD_F}/${TMP_F}/${IMAGEN} \
-    bs=1G count=3
+    bs=1G count=${SIZE_G}
   res_ok "Archivo" "${PWD_F}/${TMP_F}/${IMAGEN}" "Exitoso"
 
   #Creando dispositivo loop
@@ -743,7 +753,7 @@ EOT
     mkdir -p ${PWD_F}/${SALIDA_F}
   fi
   informa "Moviendo imagen de folder temporal a" "salida" 
-  cp -v ${PWD_F}/${TMP_F}/${IMAGEN}  \
+  mv -v ${PWD_F}/${TMP_F}/${IMAGEN}  \
     ${PWD_F}/${SALIDA_F}
   res_ok "Imagen ${IMAGEN} copiada a" "${PWD_F}/${SALIDA_F}" "Exitoso"
 
