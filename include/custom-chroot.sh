@@ -337,7 +337,8 @@ esac
 echo "${NEGRITAS}Actualizando e instalando ${AMARILLO}paquetes${RESET}"
 apt-get install -y \
   network-manager network-manager-openvpn \
-  sudo vim task-lxde-desktop
+  sudo vim 
+  #task-lxde-desktop
   #python-psycopg2 python-pyside 
   #postgresql-9.1 postgresql-client-9.1 \
   #postgresql-client-common postgresql-common 

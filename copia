@@ -105,32 +105,22 @@ DEBOOTSTRAP_I=${DISTRO}-db
 DEBOOTSTRAP_EXT="tar.gz"
 PAQUETES_DB="sudo,vim"
 
-case ${DISTRO} in
-  wheezy)
-    PAQUETES_DB="${PAQUETES_DB},wpasupplicant,wireless-tools,i2c-tools"
-    ;;
-  xenial)
-    PAQUETES_DB="${PAQUETES_DB},wpasupplicant,wireless-tools,i2c-tools,python3"
-    ;;
-esac
+#Importando bibliotecas
+source include/sys/salir.sh
+source include/sys/uso.sh
+source include/sys/dependencias.sh
+source include/sys/borrar_temps.sh
+source include/sys/descarga.sh
+source include/sys/compila.sh
+source include/sys/prepara_folders.sh
+source include/sys/debootstrap.sh
+source include/sys/crear_imagen.sh
+source include/sys/formatear_particiones.sh
+source include/sys/instalar_boot.sh
+source include/sys/instalar_root.sh
 
 #Checando si es superusuario
 es_root
-
-function uso {
-  jumbotron \
-  "${BLANCO}$0${AMARILLO} soporta estas opciones:" \
-  "  -g          Hacer imagen grafica." \
-  "  -i          NO crear imagen SD." \
-  "  -k          NO compiles kernel." \
-  "  -m          Ejecuta kernel menu." \
-  "  -p          NO ejecutes ${CYAN}include/patch.sh${RESET}." \
-  "  -u          NO compiles u-boot." \
-  "  -r          Borra todos los directorios." \
-  "  -s 8        Cambia tamaño de imagen (GB)" \
-  "  -v          Muestra informacion adicional." \
-  "  -h          Imprime esta ayuda." 
-}
 
 while getopts "gkmpurs:vh" OPT ; do
   case $OPT in
@@ -179,6 +169,15 @@ while getopts "gkmpurs:vh" OPT ; do
   esac
 done
 
+case ${DISTRO} in
+  wheezy)
+    source include/sys/wheezy.sh
+    ;;
+  xenial)
+    source include/sys/xenial.sh
+    ;;
+esac
+
 debug "Tamaño de imagen: ${SIZE_G} GB"
 
 #Checando configuraciones adicionales
@@ -188,377 +187,44 @@ if [ -f ${PWD_F}/include/configs.sh ] ; then
   res_ok "Cargadas configuraciones" "${PWD_F}/include/configs.sh" "Exitoso"
 fi
 
-#Trap de salida
-function salir {
-  #Desmontando systemas de archivos
-  sleep 3
-  debug "Desmontando sistemas virtuales"
-  umount ${PWD_F}/${TMP_F}/${MNT}/dev/pts
-  for i in proc dev sys; do
-    umount ${PWD_F}/${TMP_F}/${MNT}/$i
-  done
-  sleep 3
-  umount /dev/mapper/${parts[1]}
-
-}
-trap salir EXIT
-
-
 #Instalando paquetes necesarios
-informa "Instalando" "Paquetes" "necesarios"
-apt-get install -y \
-  qemu binfmt-support qemu-user-static \
-  gcc-arm-linux-gnueabihf pigz debootstrap \
-  kpartx make gcc libusb-1.0-0-dev \
-  pkg-config libz-dev u-boot-tools \
-  libncurses-dev
-  
-res_ok "Paquetes" "instalados" "Exitoso"
+dependencias
 
 #Borrar carpetas
-if [ "${BORRAR}" == "1" ] ; then
-  informa "Borrando" "carpetas" "todas"
-  for folder in ${FOLDERS} ; do
-    if [ -d ${PWD_F}/${folder} ] ; then
-      debug "Borrando ${PWD_F}/$folder"
-      rm -Rf ${PWD_F}/${folder}
-    fi
-  done
-  res_ok "Carpetas borradas" "todas" "Exitoso"
-  debug "Activando compilacion de u-boot y kernel"
-  UBOOT_C=1
-  KERNEL_C=1
-fi
+borrar_temps
 
-#Descargando sunxi-tools
-if [ ! -d ${SUNXITOOLS_F} ] ; then
-  informa "Descargando" "sunxi-tools" 
-  git clone https://github.com/linux-sunxi/sunxi-tools ${SUNXITOOLS_F}
-  res_ok "Descarga" "sunxi-tools" "Exitoso"
-else
-  informa "Actualizando" "sunxi-tools" 
-  cd ${SUNXITOOLS_F}
-  git pull
-  cd ${PWD_F}
-fi
-
-
-#Descargando u-boot
-if [ ! -d ${UBOOT_F} ] ; then
-  informa "Descargando" "u-boot" "${UBOOT_V}"
-  git clone -b ${UBOOT_V} https://github.com/linux-sunxi/u-boot-sunxi.git ${UBOOT_F}
-  res_ok "Descarga" "u-boot-${UBOOT_V}" "Exitoso"
-else
-  informa "Actualizando" "u-boot" "${UBOOT_V}"
-  cd ${UBOOT_F}
-  git pull
-  cd ${PWD_F}
-fi
-
-#Descargando kernel
-if [ ! -d ${KERNEL_F} ] ; then
-  informa "Descargando" "kernel" "${KERNEL_V}"
-  git clone -b sunxi-${KERNEL_V} https://github.com/linux-sunxi/linux-sunxi.git ${KERNEL_F}
-  res_ok "Descarga" "kernel-${KERNEL_V}" "Exitoso"
-else
-  informa "Actualizando" "kernel" "${KERNEL_V}"
-  cd ${KERNEL_F}
-  git reset --hard
-  git pull https://github.com/linux-sunxi/linux-sunxi.git 
-  cd ${PWD_F}
-fi
+#Descarga fuentes
+descarga
 
 #Preparando folders temporales y de salida
-informa "Validando" "folders" "${OUTPUT_F} ${TMP_F}"
-for folder in "${OUTPUT_F} ${TMP_f}"; do
-  [ ! -d ${PWD_F}/${folder} ] && \
-  debug "Creando folder ${PWD_F}/${folder}" && \
-  mkdir ${PWD_F}/${folder}
-done
-rm -Rfv ${PWD_F}/${TMP_F}/*
-res_ok "Folders existentes" "${OUTPUT_F} ${TMP_F}" "Exitoso"
+prepara_folders
 
-#Compilando sunxi-tools
-if [ ! -f ${PWD_F}/${SUNXITOOLS_F}/fex2bin ] ; then
-  informa "Compilando" "sunxi-tools"
-  debug "Compilando sunxi-tools"
-  cd ${PWD_F}/${SUNXITOOLS_F}
-  make && make install
-  cd ${PWD_F}
-  informa "Sunxi-tools" "instalados"
-fi
-
-#Compilando u-boot
-if [ "${UBOOT_C}" == "1" ] ; then
-  informa "Configurando" "u-boot" "${TARJETA}_config"
-  cd ${PWD_F}/${UBOOT_F}
-  make -j$(nproc) CROSS_COMPILE=arm-linux-gnueabihf- ${TARJETA}_config
-  informa "Compilando" "u-boot" "${TARJETA}"
-  make -j$(nproc) CROSS_COMPILE=arm-linux-gnueabihf- 
-  informa "Generando" "script.bin" "${TARJETA}"
-  cd ${PWD_F}
-  [ ! -d ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V} ] && \
-    mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}
-  fex2bin ${PWD_F}/sources/fex/script.fex \
-  ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/script.bin
-  informa "Creando" "boot.scr"
-  mkimage -C none -A arm -T script -d ${PWD_F}/sources/boot/boot.cmd \
-  ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/boot.scr
-  cp -v ${PWD_F}/sources/boot/uEnv.txt \
-  ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/uEnv.txt
-  res_ok "Compilacion de" "u-boot-${UBOOT_V}" "Exitoso"
-fi
-
-#Configuración y compilado del kernel
-if [ "${KERNEL_C}" == "1" ] ; then
-
-  informa "Configurando" "kernel" "${KERNEL_V}"
-
-  cd ${PWD_F}/${KERNEL_F}
-
-  make -j$(nproc) ARCH=arm \
-  CROSS_COMPILE=arm-linux-gnueabihf- \
-  ${CONFIG_TARJETA}
-
-  if [ "${KERNEL_M}" == "1" ] ; then
-    make -j$(nproc) ARCH=arm \
-    CROSS_COMPILE=arm-linux-gnueabihf- \
-    menuconfig
-  fi
-  
-
-  if [ "${KERNEL_P}" == "1" ] ; then
-    informa "Ejecutando" "kernel" "patch.sh"
-    cd ${PWD_F}
-    [ ! -d ${PWD_F}/${TMP_F} ] && \
-      mkdir -p ${PWD_F}/${TMP_F}
-    source include/patch.sh
-    sleep 3
-  fi
-
-  informa "Compilando" "kernel" "${KERNEL_V}"
-
-  cd ${PWD_F}/${KERNEL_F}
-
-  make -j$(nproc) ARCH=arm \
-  CROSS_COMPILE=arm-linux-gnueabihf- \
-  uImage modules
-
-  informa "Instalando" "modulos" "${KERNEL_V}"
-
-  [ ! -d ${PWD_F}/${DEBOOTSTRAP_F}/${KERNEL_V} ] && \
-    mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}/${KERNEL_V}
-
-  make ARCH=arm \
-  CROSS_COMPILE=arm-linux-gnueabihf- \
-  INSTALL_MOD_PATH=${PWD_F}/${DEBOOTSTRAP_F}/${KERNEL_V} \
-  modules_install
-  
-  cd ${PWD_F}
-
-  res_ok "Compilacion" "kernel-${KERNEL_V}" "Exitoso"
-fi
-
-jumbotron "Proceso de compilación terminado" \
-  "Continuando con creación de imagen" \
-  "Se descargara el sistema de archivos si no existe"
-
+#Compilando
+compila
 
 ### Continuando con el proceso de creacion de imagen
 if [ "$IMAGEN_C" == "1" ] ; then
   informa "Generando imagen" "uSD" "${IMAGEN}"
   
-  if [ ! -d ${DEBOOTSTRAP_F} ] ; then
-    debug "No existe la carpeta ${DEBOOTSTRAP_F} generandola..."
-    mkdir ${PWD_F}/${DEBOOTSTRAP_F}
-    debug "Marcando debootstrap para su creacion"
-    DEBOOTSTRAP_C=1
-  fi
+  #Generando debootstrap
+  debootstrap
 
-  if [ "${DEBOOTSTRAP_C}" == "1" ] ; then
-    informa "Creando imagen" "Debootstrap" "${DEBOOTSTRAP_I}"
-    if [ ! -f ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} ] ; then
-      debug "No existe imagen debootstrap, hay que crearla"
-      [ -d ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} ] && \
-        informa "Borrando directorio incompleto" \
-          ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} && \
-        rm -Rf ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
-      debug "Creando el directorio ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}"
-      mkdir ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+  #Crear archivo de imagen y copiar u-boot
+  crear_imagen
 
-      ##Colocando los locales
-      debug "Colocando los locales en debootstrap"
-      mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/etc/default
-cat <<EOT > ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/etc/locale.gen
-${LOCALES}
-EOT
+  #Montar particiones y formatearlas
+  formatear_particiones
 
-cat <<EOT > ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/etc/default/locale
-LANG=${LOCAL}
-LC_TYPE=${LOCAL}
-LC_MESSAGES=${LOCAL}
-LC_ALL=${LOCAL}
-LANGUAGE=${LENGUAJE}
-EOT
+  #Instalando particion boot
+  instalar_boot
 
-      informa "Descargando" "paquetes" "${DISTRO}"
+  #Instalando particion root
+  instalar_root
 
-      if [ "${DEBOOTSTRAP_G}" == "1" ] ; then
-        case ${DISTRO} in
-          "wheezy")
-            PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop,openbox-themes,gnome-icon-theme,libgdk-pixbuf2.0-dev,pixmap,network-manager-gnome,gtk2-engines-pixbuf,ruby-gdk-pixbuf2"
-            debug "Agregando lxde a paquetes: ${PAQUETES_DB}"
-
-            ;;
-          "xenial")
-            PAQUETES_DB="${PAQUETES_DB},task-lxde-desktop,openbox-themes,gnome-icon-theme,libgdk-pixbuf2.0-dev,pixmap,network-manager-gnome,gtk2-engines-pixbuf,ruby-gdk-pixbuf2"
-            debug "Agregando lxde a paquetes: ${PAQUETES_DB}"
-            ;;
-        esac
-      fi
-      debug "Corriendo el debootstrap"
-      debootstrap --include="${PAQUETES_DB}" \
-      --arch=armhf \
-      --foreign ${DISTRO} \
-      ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
-
-      cp /usr/bin/qemu-arm-static \
-        ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/usr/bin
-      chroot ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I} \
-        /usr/bin/qemu-arm-static /bin/sh \
-        -i /debootstrap/debootstrap --second-stage
-      informa "Comprimiendo debootstrap" "${DISTRO}" "${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT}"
-      cd ${PWD_F}/${DEBOOTSTRAP_F}
-      tar cf - ${DEBOOTSTRAP_I} | \
-        pigz -9 > ${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} 
-      cd ${PWD_F}
-      debug "Borrando el directorio de trabajo"
-      rm -Rf ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
-    else
-      informa "Imagen" "${DEBOOTSTRAP_I}" "Encontrada"
-    fi
-    res_ok "Debootstrap" "creado" "Exitoso"
-  fi
-
-  informa "Creando" "archivo" "temporal"
-  dd if=/dev/zero \
-    of=${PWD_F}/${TMP_F}/${IMAGEN} \
-    bs=1G count=${SIZE_G}
-  res_ok "Archivo" "${PWD_F}/${TMP_F}/${IMAGEN}" "Exitoso"
-
-  #Creando dispositivo loop
-  debug "Asignando loop"
-  LOOP="$(losetup -f)"
-  informa "Asignando" "loop" "${LOOP}"
-  losetup ${LOOP} ${PWD_F}/${TMP_F}/${IMAGEN}
-
-  #Instalando boot
-  informa "Instalando" "u-boot"
-  dd if=${PWD_F}/${UBOOT_F}/u-boot-sunxi-with-spl.bin \
-    of=${LOOP} \
-    bs=1024 \
-    seek=8
-  res_ok "U-boot" "instalado" "Exitoso"
-
-  #Particionando loop
-  informa "Particionando" "${LOOP}"
-  sfdisk -R ${LOOP}
-cat <<EOT | sfdisk --in-order -L -uM ${LOOP}
-1,16,c
-,,L
-EOT
-  res_ok "Dispositivo" "particionado" "Exitoso"
-  
-  #Desinstalando loop
-  informa "Desmontando" "loop" "${LOOP}"
-  losetup -d ${LOOP}
-  res_ok "Loop" "desmontado" "Exitoso"
-
-  #Montando con kpartx
-  informa "Montando con" "kpartx" "${TMP_F}/${IMAGEN}"
-  parts=($(kpartx -l ${PWD_F}/${TMP_F}/${IMAGEN} | egrep -o "loop[0-9]{1,2}p[0-9]{1,2}"))
-  kpartx -av ${PWD_F}/${TMP_F}/${IMAGEN}
-
-  #Formateando particiones
-  informa "Formateando" "particion" "${parts[0]}"
-  mkfs.vfat /dev/mapper/${parts[0]}
-  res_ok "Particionada" "${parts[0]}" "Exitoso"
-  informa "Formateando" "particion" "${parts[1]}"
-  mkfs.ext4 /dev/mapper/${parts[1]}
-  res_ok "Particionada" "${parts[1]}" "Exitoso"
-
-  #Copiando particion boot
-  informa "Copiando" "particion" "boot"
-  if [ ! -d ${PWD_F}/${TMP_F}/${MNT} ] ; then
-    debug "No existe la carpeta boot, creandola"
-    mkdir -p ${PWD_F}/${TMP_F}/${MNT}
-  fi
-  mount /dev/mapper/${parts[0]} ${PWD_F}/${TMP_F}/${MNT}
-  cp -v ${PWD_F}/${KERNEL_F}/arch/arm/boot/uImage \
-    ${PWD_F}/${TMP_F}/${MNT}
-  [ ! -d ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V} ] && \
-    mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}
-  cp -v ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/script.bin \
-    ${PWD_F}/${TMP_F}/${MNT}
-  cp -v ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/boot.scr \
-    ${PWD_F}/${TMP_F}/${MNT}
-  cp -v ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/uEnv.txt \
-    ${PWD_F}/${TMP_F}/${MNT}
-    
-  umount /dev/mapper/${parts[0]}
-
-  #Copiando particion root
-  informa "Copiando" "Root"
-  mount /dev/mapper/${parts[1]} ${PWD_F}/${TMP_F}/${MNT}
-  debug "Descomprimiendo con pigz"
-  cd ${PWD_F}/${TMP_F}/${MNT} 
-  pigz -dc ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}.${DEBOOTSTRAP_EXT} \
-    | tar xf - --strip 1
-  cd ${PWD_F}
-  res_ok "Archivos descomprimidos en" "root" "Exitoso"
-  informa "Copiando" "modulos"
-  if [ ! -d ${PWD_F}/${TMP_F}/${MNT}/lib/modules ] ; then
-    debug "Creando directorio ${PWD_F}/${TMP_F}/${MNT}/lib/modules"
-    mkdir -p ${PWD_F}/${TMP_F}/${MNT}/lib/modules
-  fi
-  cp -vr ${PWD_F}/${DEBOOTSTRAP_F}/${KERNEL_V}/lib ${PWD_F}/${TMP_F}/${MNT}
-  res_ok "Copia de modulos" "${KERNEL_V}" "Exitoso"
-
-  case ${DISTRO}  in
-    
-    "wheezy")
-    #Creando sources.list
-    informa "Agregando" "sources.list"
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/apt/sources.list
-deb http://http.debian.net/debian $DISTRO main contrib non-free
-deb-src http://http.debian.net/debian $DISTRO main contrib non-free
-deb http://http.debian.net/debian $DISTRO-updates main contrib non-free
-deb-src http://http.debian.net/debian $DISTRO-updates main contrib non-free
-deb http://security.debian.org/debian-security $DISTRO/updates main contrib non-free
-deb-src http://security.debian.org/debian-security $DISTRO/updates main contrib non-free
-EOT
-    res_ok "Archivo" "Sources.list" "Exitoso"
-    ;;
-    "xenial")
-    #Creando sources.list
-    informa "Agregando" "sources.list"
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/apt/sources.list
-deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO} main restricted multiverse
-deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO} main restricted multiverse
-deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-updates main restricted multiverse
-deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-updates main restricted multiverse
-deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO} universe
-deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO} universe
-deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-updates universe
-deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-updates universe
-deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-security main restricted multiverse
-deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-security main restricted multiverse
-deb http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-security universe
-deb-src http://ports.ubuntu.com/ubuntu-ports/ ${DISTRO}-security universe
-EOT
+  #Instalando sources
+  informa "Agregando" "sources.list"
+  sources
   res_ok "Archivo" "Sources.list" "Exitoso"
-    ;;
-  esac
   
   #Agregando entradas a fstab
   informa "Agregando" "/etc/fstab"
@@ -694,7 +360,6 @@ cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
 #!/bin/bash
 
 if [ -f /usr/local/bin/primera ] ; then
-        /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
         echo ",+" | sfdisk -N 2 /dev/mmcblk0 --force --no-reread
         rm /usr/local/bin/primera
         touch /usr/local/bin/segunda

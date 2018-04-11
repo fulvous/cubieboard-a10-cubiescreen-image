@@ -35,7 +35,9 @@
 #along with Cubiecopiadora  If not, see 
 #<http://www.gnu.org/licenses/>.
 
-##informa "Parchando" "kernel" "Cubiescreen"
+informa "Parchando" "kernel" "Drivers multimedia"
+
+#cp -v /home/lramos/.config ${PWD_F}/${KERNEL_F}/.config
 ##
 ##tar xvf ${PWD_F}/sources/cubiescreen/cubiescreen_drv.tar \
 ##  -C ${PWD_F}/${TMP_F}
@@ -62,4 +64,4 @@
 ###patch ${PWD_F}/${KERNEL_F}/drivers/input/touchscreen/auo-pixcir-ts.c  \
 ###  ${PWD_F}/sources/kernel/auo-pixcir-ts.c.patch
 ##
-##res_ok "Parches y drivers para" "cubiescreen" "Exitoso"
+res_ok "Parches y drivers para" "ubuntu" "Exitoso"
