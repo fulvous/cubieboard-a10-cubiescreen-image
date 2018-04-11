@@ -49,34 +49,35 @@ function compila {
     
      if [ "${KERNEL_P}" == "1" ] ; then
       informa "Creando" "parches para" "kernel"
-      cd ${PWD_F}
+      cd ${PWD_F}/${KERNEL_F}
       [ ! -d ${PWD_F}/${TMP_F} ] && \
         mkdir -p ${PWD_F}/${TMP_F}
-      debug "Clonando carpeta de kernel"
-      cp -rv ${PWD_F}/${KERNEL_F} ${PWD_F}/${TMP_F}/kernel_patch
       informa "Realice" "cambios en el kernel" "(${PWD_F}/${KERNEL_F})" "y cuando termine presione enter"
       read CONT
       [ ! -d ${PWD_F}/${SALIDA_F}/kernel_patches ] && \
         mkdir -p ${PWD_F}/${SALIDA_F}/kernel_patches
-      diff -rupN ${PWD_F}/${TMP_F}/kernel_patch ${PWD_F}/${KERNEL_F} > ${PWD_F}/${SALIDA_F}/kernel_patches/kernel.pat
-      debug "Borrando carpeta temporal"
-      rm -Rf ${PWD_F}/${TMP_F}/kernel_patch
+      git diff sunxi-${KERNEL_V} > ${PWD_F}/${SALIDA_F}/kernel_patches/kernel.patch
     fi
 
     informa "Aplicando parches" "al kernel"
     if [ -f ${PWD_F}/${SALIDA_F}/kernel_patches/kernel.patch ] ; then
+      debug "Se encontro parche en la salida"
       cd ${PWD_F}/${KERNEL_F}
-      patch < ${PWD_F}/${SALIDA_F}/kernel_patches/kernel.patch
+      git apply ${PWD_F}/${SALIDA_F}/kernel_patches/kernel.patch
       cd ${PWD_F}
     fi
 
     if [ -f ${PWD_F}/sources/kernel/kernel.patch ] ; then
+      debug "Se encontro parche en el directorio fuente"
       cd ${PWD_F}/${KERNEL_F}
-      patch < ${PWD_F}/sources/kernel/kernel.patch 
+      git apply ${PWD_F}/sources/kernel/kernel.patch 
       cd ${PWD_F}
     fi
- 
 
+    if [ -f ${PWD_F}/sources/kernel/.config ] ; then
+      debug "Se encontro archivo .config en directorio fuente"
+      cp -vf ${PWD_F}/sources/kernel/.config ${PWD_F}/${KERNEL_F}
+    fi 
  
     informa "Compilando" "kernel" "${KERNEL_V}"
   
