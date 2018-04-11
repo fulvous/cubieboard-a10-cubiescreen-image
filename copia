@@ -132,10 +132,32 @@ source include/sys/carpeta_salida.sh
 trap salir EXIT
 
 #Checando si es superusuario
-es_root
+RES=es_root
 
-while getopts "gkmpurs:vh" OPT ; do
+while getopts "d:gkmpurs:vh" OPT ; do
   case $OPT in
+    d)
+      PLATFORM=${OPTARG}
+      case $PLATFORM in
+        "wheezy")
+          DISTRO=$PLATFORM
+          ;;
+        "WHEEZY")
+          DISTRO="wheezy"
+          ;;
+        "xenial")
+          DISTRO=$PLATFORM
+          ;;
+        "XENIAL")
+          DISTRO="xenial"
+          ;;
+        *)
+          res_err "Opcion invalida" "$OPTARG" "ERROR"
+          uso
+          exit 1
+          ;;
+      esac
+      ;;      
     g)
       DEBOOTSTRAP_G=1
       DEBOOTSTRAP_I=${DISTRO}-db-g

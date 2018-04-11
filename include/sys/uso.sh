@@ -9,7 +9,7 @@ function uso {
   "  -p                       NO ejecutes ${CYAN}include/patch.sh${RESET}." \
   "  -u                       NO compiles u-boot." \
   "  -r                       Borra todos los directorios." \
-  "  -s 8                     Cambia tamaño de imagen (GB)" \
+  "  -s TAMANO_GB             Cambia tamaño de imagen (GB)" \
   "  -v                       Muestra informacion adicional." \
   "  -h                       Imprime esta ayuda." 
 }
