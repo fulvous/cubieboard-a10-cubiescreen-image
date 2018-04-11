@@ -105,6 +105,10 @@ DEBOOTSTRAP_I=${DISTRO}-db
 DEBOOTSTRAP_EXT="tar.gz"
 PAQUETES_DB="sudo,vim"
 
+#Banderas de control
+VIRTUALES_M=0
+KPARTX_M=0
+
 #Importando bibliotecas
 source include/sys/salir.sh
 source include/sys/uso.sh
@@ -118,6 +122,14 @@ source include/sys/crear_imagen.sh
 source include/sys/formatear_particiones.sh
 source include/sys/instalar_boot.sh
 source include/sys/instalar_root.sh
+source include/sys/archivos_config_sistema.sh
+source include/sys/actualizar.sh
+source include/sys/firstboot.sh
+source include/sys/lanza_custom_chroot.sh
+source include/sys/carpeta_salida.sh
+
+#Solicitar ejecutar salir
+trap salir EXIT
 
 #Checando si es superusuario
 es_root
@@ -226,213 +238,34 @@ if [ "$IMAGEN_C" == "1" ] ; then
   sources
   res_ok "Archivo" "Sources.list" "Exitoso"
   
-  #Agregando entradas a fstab
-  informa "Agregando" "/etc/fstab"
-cat <<EOT >> ${PWD_F}/${TMP_F}/${MNT}/etc/fstab
-none  /tmp  tmpfs defaults,noatime,mode=1777 0 0
-/dev/mmcblk0p1 /boot vfat  defaults  0 0
-EOT
-  res_ok "Archivo cambiado" "/etc/fstab" "Exitoso"
+  #Agregando fstab,interfaces,resolv.conf
+  archivos_config_sistema
 
-  #Agregando archivo de interfaces
-  informa "Agregando" "/etc/network/interfaces"
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/network/interfaces
-auto lo
-iface lo inet loopback
-allow-hotplug eth0
-iface eth0 inet dhcp
-iface wlan0 inet dhcp
-EOT
-  res_ok "Archivo creado" "/etc/network/interfaces" "Exitoso"
+  #Montar sistemas virtuales y actualizar paquetes
+  actualizar
 
-  #Agregando archivo resolv.conf
-  informa "Agregando" "/etc/resolv.conf"
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/resolv.conf
-nameserver 8.8.8.8
-nameserver 4.2.2.2
-EOT
-  res_ok "Archivo creado" "/etc/resolv.conf" "Exitoso"
-
-  #Montando fs virtuales
-  informa "Montando carpetas" "proc dev dev/pts sys"
-  for i in proc dev sys; do
-    mount -o bind /$i ${PWD_F}/${TMP_F}/${MNT}/$i
-  done
-  mount -o bind /dev/pts ${PWD_F}/${TMP_F}/${MNT}/dev/pts
-  res_ok "Carpetas montadas" "proc dev dev/pts sys" "Exitoso"
-
-
-  #Actualizar paquetes
-  informa "Actualizando" "paquetes"
-  debug "Creando tmp/update.sh"
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/tmp/update.sh
-#!/bin/bash
-apt-get install -f -y
-apt-get update -y
-apt-get upgrade -y
-EOT
-  debug "Ejecutando tmp/update.sh"
-  chroot ${PWD_F}/${TMP_F}/${MNT} \
-    /usr/bin/qemu-arm-static /bin/bash \
-    /tmp/update.sh
-  debug "Borrando archivo de actualizacion"
-  rm ${PWD_F}/${TMP_F}/${MNT}/tmp/update.sh
-  res_ok "Actualizacion de" "sistema" "Exitoso"
-
-  #Evitar actualizaciones automaticas
-  informa "Evitar actualizaciones" "automaticas"
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/apt/apt.conf.d/71-no-recommends
-APT::Install-Recommends "0";
-APT::Install-Suggests "0";
-EOT
-  res_ok "Actualizaciones automaticas" "/etc/apt/apt.conf.d/71-no-recommends" "Exitoso"
-
-  #Asegurarnos de tener terminal serial
-  informa "Habilitar" "terminal serial"
-  echo "T0:2345:respawn:/sbin/getty -L ttyS0 115200 vt100" >> ${PWD_F}/${TMP_F}/${MNT}/etc/inittab
-
-
-  ##Colocando script de arranque
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/rc.local
-##Coloca cualquier comando antes del exit 0
-[ -f /usr/local/bin/inicial.sh ] && /usr/local/bin/inicial.sh
-exit0
-EOT
-
-  [ ! -d ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin ] && mkdir -p ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin
-  touch ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/primera
- 
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
-#!/bin/bash
-
-if [ -f /usr/local/bin/primera ] ; then
-        echo ",+" | sfdisk -N 2 /dev/mmcblk0 --force --no-reread
-        rm /usr/local/bin/primera
-        touch /usr/local/bin/segunda
-        reboot
-else 
-        if [ -f /usr/local/bin/segunda ] ; then 
-                rm /usr/local/bin/segunda
-                resize2fs /dev/mmcblk0p2
-        fi
-fi
-
-## rm /usr/local/bin/inicial.sh
-EOT
-
-  ##Dar permiso de ejecución a primer arranque
-  chmod 755 ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
-
-
+  #Crear archivo firstboot
+  firstboot
+  
 
   ##Procesos adicionales después de montado si es gráfico
   if [ "${DEBOOTSTRAP_G}" ==  "1" ] ; then
-
-    case ${DISTRO} in
-       "wheezy")
-       
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
-#!/bin/bash
-
-if [ -f /usr/local/bin/primera ] ; then
-        /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
-        echo ",+" | sfdisk -N 2 /dev/mmcblk0 --force --no-reread
-        rm /usr/local/bin/primera
-        touch /usr/local/bin/segunda
-        reboot
-else 
-        if [ -f /usr/local/bin/segunda ] ; then 
-                rm /usr/local/bin/segunda
-                resize2fs /dev/mmcblk0p2
-        fi
-fi
-
-## rm /usr/local/bin/inicial.sh
-EOT
-
-        ##Dar permiso de ejecución a primer arranque
-        chmod 755 ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
-
-        ;;
-       "xenial")
-       
-cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
-#!/bin/bash
-
-if [ -f /usr/local/bin/primera ] ; then
-        echo ",+" | sfdisk -N 2 /dev/mmcblk0 --force --no-reread
-        rm /usr/local/bin/primera
-        touch /usr/local/bin/segunda
-        reboot
-else 
-        if [ -f /usr/local/bin/segunda ] ; then 
-                rm /usr/local/bin/segunda
-                resize2fs /dev/mmcblk0p2
-        fi
-fi
-
-## rm /usr/local/bin/inicial.sh
-EOT
-
-        ##Dar permiso de ejecución a primer arranque
-        chmod 755 ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin/inicial.sh
-
-        ;;
-
-    esac
-
+    desktop_firstboot
   fi
 
 
-  #Ejecutando los scripts custom-fuera
+  #Ejecutando los scripts custom-fuera.sh
   informa "Ejecutando" "include/custom-fuera.sh"
   source ${PWD_F}/include/custom-fuera.sh
 
+  #Ejecutar el script custom-chroot.sh
+  lanza_custom_chroot
 
-  #Ejecutando los scripts custom-chroot
-  informa "Ejecutando" "include/custom-chroot.sh"
-  debug "Copiando los scripts a la imagen"
-  cp -v ${PWD_F}/herramientax/formato/colores.sh \
-    ${PWD_F}/${TMP_F}/${MNT}
-  cp -v ${PWD_F}/include/custom-chroot.sh \
-    ${PWD_F}/${TMP_F}/${MNT}
-
-  debug "Ejecutando el script en jaula"
-  chroot ${PWD_F}/${TMP_F}/${MNT} \
-    /usr/bin/qemu-arm-static /bin/bash \
-    /custom-chroot.sh
+  #Desmontar sistemas
+  salir
   
-  debug "Borrando los scripts de la imagen"
-  rm ${PWD_F}/${TMP_F}/${MNT}/custom-chroot.sh
-  rm ${PWD_F}/${TMP_F}/${MNT}/colores.sh
-  
-  res_ok "Script" "include/custom.sh" "Exitoso"
-  
-  informa "Desmontando" "sistemas de archivos"
-  #Desmontando systemas de archivos
-  sleep 3
-  debug "Desmontando sistemas virtuales"
-  umount ${PWD_F}/${TMP_F}/${MNT}/dev/pts
-  for i in proc dev sys; do
-    umount ${PWD_F}/${TMP_F}/${MNT}/$i
-  done
-  sleep 3
-  umount /dev/mapper/${parts[1]}
-
-  #Desmontando con kpartx
-  debug "Desmontando particiones loop"
-  kpartx -d ${PWD_F}/${TMP_F}/${IMAGEN}
-  res_ok "Particion desmontada" "${PWD_F}/${TMP_F}/${IMAGEN}" "Exitoso"
-
   #Moviendo la imagen a la carpeta de salida
-  if [ ! -d ${PWD_F}/${SALIDA_F} ] ; then
-    informa "Creando la carpeta de salida" "${PWD_F}/${SALIDA_F}"
-    mkdir -p ${PWD_F}/${SALIDA_F}
-  fi
-  informa "Moviendo imagen de folder temporal a" "salida" 
-  mv -v ${PWD_F}/${TMP_F}/${IMAGEN}  \
-    ${PWD_F}/${SALIDA_F}
-  res_ok "Imagen ${IMAGEN} copiada a" "${PWD_F}/${SALIDA_F}" "Exitoso"
+  carpeta_salida
 
 fi
 
