@@ -1,3 +1,6 @@
+
+DEBOOTSTRAP="/usr/sbin/debootstrap"
+
 function debootstrap {
   if [ ! -d ${DEBOOTSTRAP_F} ] ; then
     debug "No existe la carpeta ${DEBOOTSTRAP_F} generandola..."
@@ -35,10 +38,14 @@ EOT
       informa "Descargando" "paquetes" "${DISTRO}"
 
       debug "Corriendo el debootstrap"
-      debootstrap --include="${PAQUETES_DB}" \
+      debug "Estos son los paquetes a instalar: ${PAQUETES_DB}"
+
+      ${DEBOOTSTRAP} --include="${PAQUETES_DB}" \
       --arch=armhf \
       --foreign ${DISTRO} \
       ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}
+
+      debug "debootstrap creado"
 
       cp /usr/bin/qemu-arm-static \
         ${PWD_F}/${DEBOOTSTRAP_F}/${DEBOOTSTRAP_I}/usr/bin
