@@ -132,7 +132,7 @@ function uso {
   "  -h          Imprime esta ayuda." 
 }
 
-while getopts ":s:gkmpurvh" OPT ; do
+while getopts "gkmpurs:vh" OPT ; do
   case $OPT in
     g)
       DEBOOTSTRAP_G=1
@@ -155,7 +155,7 @@ while getopts ":s:gkmpurvh" OPT ; do
       ;;
     s)
       SIZE_G=${OPTARG}
-      if [ -z "${SIZE_G}" ]; then
+      if [ -z "${SIZE_G}" ] || [ ${SIZE_G} -eq 0 ] ; then
         res_err "Opcion invalida" "$OPTARG" "ERROR"
         uso
         exit 1
@@ -178,6 +178,8 @@ while getopts ":s:gkmpurvh" OPT ; do
       ;;
   esac
 done
+
+debug "Tamaño de imagen: ${SIZE_G} GB"
 
 #Checando configuraciones adicionales
 if [ -f ${PWD_F}/include/configs.sh ] ; then
@@ -299,6 +301,11 @@ if [ "${UBOOT_C}" == "1" ] ; then
     mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}
   fex2bin ${PWD_F}/sources/fex/script.fex \
   ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/script.bin
+  informa "Creando" "boot.scr"
+  mkimage -C none -A arm -T script -d ${PWD_F}/sources/boot/boot.cmd \
+  ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/boot.scr
+  cp -v ${PWD_F}/sources/boot/uEnv.txt \
+  ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/uEnv.txt
   res_ok "Compilacion de" "u-boot-${UBOOT_V}" "Exitoso"
 fi
 
@@ -493,6 +500,11 @@ EOT
     mkdir -p ${PWD_F}/${DEBOOTSTRAP_F}
   cp -v ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/script.bin \
     ${PWD_F}/${TMP_F}/${MNT}
+  cp -v ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/boot.scr \
+    ${PWD_F}/${TMP_F}/${MNT}
+  cp -v ${PWD_F}/${DEBOOTSTRAP_F}/${UBOOT_V}/uEnv.txt \
+    ${PWD_F}/${TMP_F}/${MNT}
+    
   umount /dev/mapper/${parts[0]}
 
   #Copiando particion root
