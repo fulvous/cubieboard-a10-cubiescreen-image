@@ -6,7 +6,7 @@ function uso {
   "  -i                       NO crear imagen SD." \
   "  -k                       NO compiles kernel." \
   "  -m                       Ejecuta kernel menu." \
-  "  -p                       NO ejecutes ${CYAN}include/patch.sh${RESET}." \
+  "  -p                       Crea parches en Kernel." \
   "  -u                       NO compiles u-boot." \
   "  -r                       Borra todos los directorios." \
   "  -s TAMANO_GB             Cambia tamaño de imagen (GB)" \

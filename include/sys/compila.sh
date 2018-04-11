@@ -47,16 +47,37 @@ function compila {
       menuconfig
     fi
     
-  
-    if [ "${KERNEL_P}" == "1" ] ; then
-      informa "Ejecutando" "kernel" "patch.sh"
+     if [ "${KERNEL_P}" == "1" ] ; then
+      informa "Creando" "parches para" "kernel"
       cd ${PWD_F}
       [ ! -d ${PWD_F}/${TMP_F} ] && \
         mkdir -p ${PWD_F}/${TMP_F}
-      source include/patch.sh
-      sleep 3
+      debug "Clonando carpeta de kernel"
+      cp -rv ${PWD_F}/${KERNEL_F} ${PWD_F}/${TMP_F}/kernel_patch
+      informa "Realice" "cambios en el kernel" "(${PWD_F}/${KERNEL_F})" "y cuando termine presione enter"
+      read CONT
+      [ ! -d ${PWD_F}/${SALIDA_F}/kernel_patches ] && \
+        mkdir -p ${PWD_F}/${SALIDA_F}/kernel_patches
+      diff -rupN ${PWD_F}/${TMP_F}/kernel_patch ${PWD_F}/${KERNEL_F} > ${PWD_F}/${SALIDA_F}/kernel_patches/kernel.pat
+      debug "Borrando carpeta temporal"
+      rm -Rf ${PWD_F}/${TMP_F}/kernel_patch
     fi
-  
+
+    informa "Aplicando parches" "al kernel"
+    if [ -f ${PWD_F}/${SALIDA_F}/kernel_patches/kernel.patch ] ; then
+      cd ${PWD_F}/${KERNEL_F}
+      patch < ${PWD_F}/${SALIDA_F}/kernel_patches/kernel.patch
+      cd ${PWD_F}
+    fi
+
+    if [ -f ${PWD_F}/sources/kernel/kernel.patch ] ; then
+      cd ${PWD_F}/${KERNEL_F}
+      patch < ${PWD_F}/sources/kernel/kernel.patch 
+      cd ${PWD_F}
+    fi
+ 
+
+ 
     informa "Compilando" "kernel" "${KERNEL_V}"
   
     cd ${PWD_F}/${KERNEL_F}

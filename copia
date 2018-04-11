@@ -48,12 +48,14 @@ BORRAR=0
 UBOOT_C=1
 KERNEL_C=1
 KERNEL_M=0
-KERNEL_P=1
+KERNEL_P=0
 IMAGEN_C=1
 DEBOOTSTRAP_C=1
 DEBOOTSTRAP_G=0
 LOG="${PWD_F}/cubiecopiadora.log"
 SIZE_G="3"
+VIRTUALES_M=0
+KPARTX_M=0
 
 
 #Locales
@@ -105,9 +107,6 @@ DEBOOTSTRAP_I=${DISTRO}-db
 DEBOOTSTRAP_EXT="tar.gz"
 PAQUETES_DB="sudo,vim"
 
-#Banderas de control
-VIRTUALES_M=0
-KPARTX_M=0
 
 #Importando bibliotecas
 source include/sys/salir.sh
@@ -172,7 +171,7 @@ while getopts "d:gkmpurs:vh" OPT ; do
       KERNEL_M=1
       ;;
     p)
-      KERNEL_P=0
+      KERNEL_P=1
       ;;
     u)
       UBOOT_C=0
