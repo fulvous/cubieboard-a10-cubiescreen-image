@@ -3,7 +3,7 @@ function firstboot {
 cat <<EOT > ${PWD_F}/${TMP_F}/${MNT}/etc/rc.local
 ##Coloca cualquier comando antes del exit 0
 [ -f /usr/local/bin/inicial.sh ] && /usr/local/bin/inicial.sh
-exit0
+exit 0
 EOT
 
   [ ! -d ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin ] && mkdir -p ${PWD_F}/${TMP_F}/${MNT}/usr/local/bin
